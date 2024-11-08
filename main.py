@@ -72,7 +72,15 @@ def main():
     roster_json = requests.post("https://centraliowa.policetocitizen.com/api/Inmates/241", json=opts, cookies=cookie_dict, headers=header_dict).json()
 
     for inmate in roster_json["Inmates"]:
+        inmate["Sex"] = inmate["Sex"] == "MALE"
+        inmate["FirstName"] = inmate["FirstName"].capitalize()
+        inmate["LastName"] = inmate["LastName"].capitalize()
+        inmate["MiddleName"] = inmate["MiddleName"].capitalize()
+        inmate["BookingAgency"] = inmate["BookingAgency"].capitalize()
+        inmate["Age"] = int(inmate["Age"])
+
         print(json.dumps(inmate), sep="\n")
+
         id_str = f"{inmate["LastName"]}:{inmate["FirstName"]}:{inmate["Sex"]}:{inmate["MiddleName"]}"
         id = hashlib.sha224(bytes(id_str, "latin1"))
         id = id.digest()
