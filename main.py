@@ -1,5 +1,6 @@
-import requests, json, hashlib
-from dateutil import tz
+import requests, json, hashlib, datetime, time
+from mysql import connector
+from dateutil.parser import parse 
 
 pretty = False
 
@@ -7,17 +8,24 @@ pretty = False
 # https://www.legis.iowa.gov/docs/code/719.1.pdf
 # https://www.info.iastate.edu/
 
+def parse_height(height: str):
+    return int(height[0]) * 12 + int(height[3:5])
+
 def exec_sql(sql: str):
     print(sql)
 
 def main():
-    new_people = []
-    updated_people = []
-    new_arrests = []
-    new_mugshots = []
-    new_charges = []
+    print(f"Running sniffy {datetime.datetime.now()}")
+    ctx = connector.connect(user="sniffy", database="inmates")
+    curs = ctx.cursor()
     
-    exec_sql("SELECT current_inmates.PID, current_inmates.AID, arrests.Bond FROM current_inmates INNER JOIN arrests ON current_inmates.AID = arrests.AID;")
+    current_list = {}
+    
+    curs.execute("SELECT current_inmates.PID, current_inmates.AID, arrests.Bond FROM current_inmates INNER JOIN arrests ON current_inmates.AID = arrests.ID;")
+
+    for inmate in curs:
+        current_list[inmate[0]] = (inmate[1], inmate[2])    
+
     res = requests.get("https://centraliowa.policetocitizen.com/Inmates/Catalog")
     cookies = res.headers.get("Set-Cookie")
 
@@ -78,31 +86,69 @@ def main():
         inmate["MiddleName"] = inmate["MiddleName"].capitalize()
         inmate["BookingAgency"] = inmate["BookingAgency"].capitalize()
         inmate["Age"] = int(inmate["Age"])
+        inmate["Height"] = parse_height(inmate["Height"])
+        inmate["Weight"] = int(inmate["Weight"])
 
-        print(json.dumps(inmate), sep="\n")
+        print(f'Processing {inmate["FirstName"]} {inmate["LastName"]}')
 
-        id_str = f"{inmate["LastName"]}:{inmate["FirstName"]}:{inmate["Sex"]}:{inmate["MiddleName"]}"
+        bond = 0
+
+        for charge in inmate["Charges"]:
+            bond += int(charge["BondAmount"])
+
+        id_str = f"{inmate['LastName']}:{inmate['FirstName']}:{inmate['Sex']}:{inmate['MiddleName']}"
         id = hashlib.sha224(bytes(id_str, "latin1"))
         id = id.digest()
 
-        print(id)
+        if current_list.get(id, None) != None:
+            print(f'{inmate["FirstName"]} {inmate["LastName"]} (ID: {id.hex()}) already exists in current inmates, AID: {current_list[id][0]}')
+            del current_list[id]
+            continue
 
-        break
-        # if pid is in current_inmates just check to see if bond needs to be adjusted
-        if False:
-            print("TODO")
+        curs.reset()
+        curs.execute("SELECT Arrests FROM people WHERE ID=%s", [id])
+
+        row = curs.fetchone()
+
+        if row == None:
+            print(f'Inserting {inmate["FirstName"]} {inmate["LastName"]}')
+            curs.reset()
+            curs.execute("INSERT INTO people (ID,LastName,FirstName,MiddleName,Birthyear,Weight,Height,Gender,Race) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (id, inmate["LastName"], inmate["FirstName"], inmate["MiddleName"], datetime.date.today().year - inmate["Age"], inmate["Weight"], inmate["Height"], inmate["Sex"], inmate["Race"]))
         else:
-            # Check and see if the PID exists in people already, if not create a new person
-            exec_sql("SELECT ID, Arrests FROM people WHERE ID = id;")
-            
-            # if they dont exist
-            if True:
-                new_people.append(inmate)
-            else:
-                updated_people.append(inmate)
+            print(f'Updating {inmate["FirstName"]} {inmate["LastName"]}')
+            curs.reset()
+            curs.execute("UPDATE people SET Arrests=%s WHERE ID=%s", (row[0] + 1, id))
 
+        curs.reset()
 
-    exec_sql("INSERT INTO people (ID, LastName, FirstName, MiddleName, Birthyear, Weight, Height, Gender, Race)")
+        curs.execute("INSERT INTO arrests (Date, PID, Bond) VALUES (%s, %s, %s);", (parse(inmate["ArrestDate"]).strftime('%Y-%m-%d %H:%M:%S'), id, bond))
+        arrest_id = curs.lastrowid
+
+        print(f"Created Arrest, id: {arrest_id}")
+
+        for charge in inmate["Charges"]:
+            curs.reset()
+            curs.execute("SELECT ID FROM statutes WHERE ID=%s", [charge["Name"]])
+
+            if curs.fetchone() == None:
+                print(f"Creating new Statute '{charge['Name']}")
+                curs.reset()
+                curs.execute("INSERT INTO statutes (ID, Name, Description, Notes) VALUES (%s, %s, %s, %s)", (charge["Name"], charge["Description"], "g", "g"))
+                curs.reset()
+            print("Creating new charge")
+            curs.execute("INSERT INTO charges (PID, AID, SID, ChargedAt, Bond, InitialBond, Agency) VALUES (%s, %s, %s, %s, %s, %s, %s)", (id, arrest_id, charge["Name"], parse(charge["Date"]).strftime('%Y-%m-%d %H:%M:%S'), charge["BondAmount"], charge["BondAmount"], inmate["BookingAgency"]))
+
+        curs.reset()
+        curs.execute("INSERT INTO current_inmates (PID, AID) VALUES (%s, %s)", (id, arrest_id))
+
+    for key in current_list:
+        print(f'Removing inmate {key.hex()}')
+        curs.reset()
+        curs.execute("DELETE FROM current_inmates WHERE PID=%s", [key])
+
+    curs.close()
+    ctx.commit()
+    ctx.close()
 
 if __name__ == "__main__":
     main()
