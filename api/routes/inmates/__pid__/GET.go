@@ -1,17 +1,17 @@
 package inmates
 
 import (
-    "time"
-    "api/types"
     "net/http"
+    "api/types"
+    "time"
     "encoding/hex"
     "api/database"
     "github.com/gin-gonic/gin"
 )
 
 func GET(c *gin.Context) {
-    spid := c.Param("pid")
-    pid, err := hex.DecodeString(spid)
+    sqpid := c.Param("pid")
+    qpid, err := hex.DecodeString(sqpid)
 
     if err != nil {
         c.AbortWithError(http.StatusBadRequest, err)
@@ -19,30 +19,41 @@ func GET(c *gin.Context) {
     }
 
     q_start := time.Now()
+    y := int64(q_start.Year())
     inmates := types.QueryResults{}
     inmates.TTL = time.Now().String()
     dbc, err := database.GetDBC()
+    ct := c.GetHeader("Content-Type")
 
-    charges := map[int] []types.Charge {}
+    charges := map[int] []types.Charge{}
 
     if err != nil {
-        c.AbortWithError(http.StatusInternalServerError, err)
+        c.AbortWithError(500, err)
         return
     }
 
-    rows, err := dbc.Query("SELECT current_inmates.AID,current_inmates.PID, people.FirstName, people.LastName, arrests.Bond, arrests.Date FROM current_inmates JOIN people ON current_inmates.PID=? AND current_inmates.PID=people.ID JOIN arrests ON arrests.ID=current_inmates.AID ORDER BY arrests.Date DESC", pid)
+    rows, err := dbc.Query(`
+        SELECT current_inmates.AID,current_inmates.PID, people.FirstName, people.MiddleName, people.LastName, people.Birthyear, arrests.Bond, arrests.Date
+        FROM current_inmates JOIN people ON people.ID=? AND current_inmates.PID=people.ID
+        JOIN arrests ON arrests.ID=current_inmates.AID
+        ORDER BY arrests.Date DESC
+    `, qpid)
 
     if err != nil {
-        c.AbortWithError(http.StatusInternalServerError, err)
+        c.AbortWithError(500, err)
         return
     }
 
     defer rows.Close()
 
-    charge_rows, err := dbc.Query("SELECT charges.AID, charges.ChargedAt, charges.Bond, charges.Notes as ChargeNotes, statutes.ID as SID, statutes.Name from charges join statutes ON charges.PID=? AND statutes.ID=charges.SID LEFT JOIN current_inmates ON charges.AID=current_inmates.AID ORDER BY charges.PID", pid)
+    charge_rows, err := dbc.Query(`
+        SELECT charges.AID, charges.ChargedAt, charges.Bond, charges.SID, statutes.Name, charges.ID
+        FROM charges JOIN statutes ON charges.PID=? AND statutes.ID=charges.SID
+        LEFT JOIN current_inmates ON charges.AID=current_inmates.AID ORDER BY charges.PID
+    `, qpid)
 
     if err != nil {
-        c.AbortWithError(http.StatusInternalServerError, err)
+        c.AbortWithError(500, err)
         return
     }
 
@@ -51,16 +62,29 @@ func GET(c *gin.Context) {
     for charge_rows.Next() {
         charge := types.Charge{}
         var aid int
-        err = charge_rows.Scan(&aid, &charge.ChargedAt, &charge.Bond, &charge.Notes, &charge.Charge, &charge.ChargeName)
+        err = charge_rows.Scan(&aid, &charge.ChargedAt, &charge.Bond, &charge.Charge, &charge.ChargeName, &charge.CID)
+
+        if err != nil {
+            c.AbortWithError(http.StatusInternalServerError, err)
+            return
+        }
+
         charges[aid] = append(charges[aid], charge)
     }
 
     for rows.Next() {
         inmate := types.Inmate{}
         var pid []byte
-        err = rows.Scan(&inmate.AID, &pid, &inmate.FirstName, &inmate.LastName, &inmate.Bond, &inmate.Date)
+        var birthYear int64
+        err = rows.Scan(&inmate.AID, &pid, &inmate.FirstName, &inmate.MiddleName, &inmate.LastName, &birthYear, &inmate.Bond, &inmate.Date)
+
+        if err != nil {
+            c.AbortWithError(http.StatusInternalServerError, err)
+            return
+        }
 
         inmate.Charges = charges[inmate.AID]
+        inmate.Age = uint8(y - birthYear)
         inmate.PID = hex.EncodeToString(pid)
         inmates.Data = append(inmates.Data, inmate)
         inmates.Size++
@@ -69,5 +93,12 @@ func GET(c *gin.Context) {
     inmates.QT =  time.Now().UnixMicro() - q_start.UnixMicro()
 
     inmates.Time = time.Now().String()
-    c.JSON(200, inmates)
+
+    switch ct {
+    case "text/xml":
+        c.XML(http.StatusOK, inmates)
+        return
+    default: 
+        c.JSON(200, inmates)
+    }
 }
