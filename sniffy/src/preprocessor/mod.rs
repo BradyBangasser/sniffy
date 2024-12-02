@@ -12,7 +12,7 @@ pub mod preprocessor {
     }
 
     impl Preprocessor {
-        pub fn new() -> &mut Preprocessor {
+        pub fn new() -> Preprocessor {
             let mut pp = Preprocessor {
                 output: VecDeque::<Inmate>::new(),
                 threads: Vec::new() 
@@ -20,13 +20,19 @@ pub mod preprocessor {
 
             pp.spool();
 
-            return &mut pp;
+            return pp;
         }
+
+        fn 
 
         fn spool(&mut self) {
             for i in 0..MAX_THREADS {
-                self.threads.index(0)
+                thread::spawn(|| {})
             }
+        }
+
+        fn despool(&mut self) {
+            
         }
     }
 }
