@@ -4,6 +4,7 @@ pub mod types {
         pub data: &'a str,
     }
 
+    #[derive(Debug)]
     pub struct Inmate {
         pub first: String,
         pub middle: String,

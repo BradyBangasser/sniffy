@@ -5,7 +5,7 @@ mod module_loader;
 use std::ptr::null;
 
 fn main() {
-    let pp = crate::preprocessor::preprocessor::Preprocessor::new();    
+    let mut pp = crate::preprocessor::preprocessor::Preprocessor::new();    
     let mut nmods: u16 = 0;
     let mut omod = module_loader::ModuleOut {
         enc: 0,
@@ -19,7 +19,8 @@ fn main() {
             println!("{:#?}", std::ffi::CStr::from_bytes_until_nul(&i.module_path).unwrap());
             module_loader::exec_module(0, &mut omod);
 
-            // println!("{:#?}", std::ffi::CStr::from_ptr(omod.out));
+            pp.push(std::ffi::CStr::from_ptr(omod.out).to_str().unwrap().to_string());
         }
     }
+  pp.despool();
 }

@@ -52,7 +52,7 @@ function FETCH ()
         req.headers:append("Cookie", k .. "=" .. v .. ";")
     end
 
-    req:set_body('{"FilterOptionsParameters":{"IntersectionSearch":true,"SearchText":"","Parameters":[]},"IncludeCount":true,"PagingOptions":{"SortOptions":[{"Name":"ArrestDate","SortDirection":"Descending","Sequence":1}],"Take":10,"Skip":0}}')
+    req:set_body('{"FilterOptionsParameters":{"IntersectionSearch":true,"SearchText":"","Parameters":[]},"IncludeCount":true,"PagingOptions":{"SortOptions":[{"Name":"ArrestDate","SortDirection":"Descending","Sequence":1}],"Take":100,"Skip":0}}')
 
     rheaders, stream = req:go()
 

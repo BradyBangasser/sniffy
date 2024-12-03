@@ -1,4 +1,4 @@
-module_compile_flags := -I/usr/include/lua5.3
+module_compile_flags := -I/usr/include/lua5.4.7
 CXX_STD := c++23
 C_STD := c23
 out := target/lib
