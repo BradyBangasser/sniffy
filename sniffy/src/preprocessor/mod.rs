@@ -1,19 +1,106 @@
+mod parsers;
+
 pub mod preprocessor {
     use std::thread;
     use std::sync::{Mutex, Arc};
     use std::sync::atomic::{AtomicBool,AtomicU32,Ordering};
     use crate::types::types::Inmate;
+    use crate::preprocessor::parsers::parsers;
     use std::collections::VecDeque;
 
     const MAX_THREADS: u8 = 1;
+
+    #[derive(Debug)]
+    struct _RawCharge {
+        bond: Option<u64>,
+        bond_status: Option<String>,
+        datetime: Option<chrono::DateTime<chrono::Utc>>,
+        statute_id: Option<String>,
+        statute: Option<String>,
+        statute_description: Option<String>,
+        docket_number: Option<String>,
+        notes: String
+    }
+
+    impl _RawCharge {
+        pub fn new() -> Self {
+            Self {
+                bond: None,
+                bond_status: None,
+                datetime: None,
+                statute_id: None,
+                statute: None,
+                statute_description: None,
+                docket_number: None,
+                notes: String::new()
+            }
+        }
+
+        pub fn parse_serde_charges(v: &mut Vec<_RawCharge>, value: &serde_json::Value) {
+            if !value.is_array() {
+                return;
+            }
+
+            let charges = value.as_array();
+
+            for charge in charges.unwrap() {
+                let parsed_charge = Self::parse_serde(charge);
+
+                if parsed_charge.is_some() {
+                    v.push(parsed_charge.unwrap());
+                }
+            }
+        }
+
+        pub fn parse_serde(value: &serde_json::Value) -> Option<Self> {
+            if !value.is_object() {
+                return None;
+            }
+
+            let obj = value.as_object().unwrap();
+            let mut charge = Self::new();
+
+            for key in obj.keys() {
+                match key.as_str() {
+                    "bond"|"bondamount" => charge.bond = obj[key].as_u64(),
+                    "bondstatus" => charge.bond_status = Some(obj[key].to_string()),
+                    "date" => charge.datetime = parsers::parse_serde_date(&obj[key]),
+                    "name" => charge.statute_id = parsers::parse_serde_not_empty_string(&obj[key]),
+                    "description" => charge.statute = parsers::parse_serde_not_empty_string(&obj[key]),
+                    "docketnumber" => charge.docket_number = parsers::parse_serde_not_empty_string(&obj[key]),
+                    _ => {
+
+                    }
+                };
+            }
+
+            return Some(charge);
+        }
+    }
 
     #[derive(Debug)]
     struct _RawInmate {
         first_name: String,
         middle_name: String,
         last_name: String,
-        age: Option<u8>,
+        age: Option<u64>,
+        sex: Option<bool>,
+        height: Option<u8>,
+        weight: Option<u8>,
+        bond: Option<u64>,
         birth_year: Option<chrono::DateTime<chrono::Utc>>,
+        arrest_date: Option<chrono::DateTime<chrono::Utc>>,
+        arresting_agency: Option<String>,
+        booking_agency: Option<String>,
+        race: Option<String>,
+        arrest_notes: String,
+        holding_facility: Option<String>,
+        release_date: Option<chrono::DateTime<chrono::Utc>>,
+        court_date: Option<chrono::DateTime<chrono::Utc>>,
+        image_id: Option<String>,
+        home_address: Option<String>,
+        case_id: Option<String>,
+        charges: Vec<_RawCharge>,
         notes: String
     }
 
@@ -24,7 +111,23 @@ pub mod preprocessor {
                 last_name: String::new(),
                 middle_name: String::new(),
                 age: None,
+                sex: None,
+                height: None,
+                weight: None,
+                bond: None,
                 birth_year: None,
+                arrest_date: None,
+                arresting_agency: None,
+                booking_agency: None,
+                race: None,
+                arrest_notes: String::new(),
+                holding_facility: None,
+                release_date: None,
+                court_date: None,
+                image_id: None,
+                home_address: None,
+                case_id: None,
+                charges: Vec::new(),
                 notes: String::new()
             }
         }
@@ -58,6 +161,24 @@ pub mod preprocessor {
                 "firstname" => inmate.first_name = value.to_string(),
                 "lastname" => inmate.last_name = value.to_string(),
                 "middlename" => inmate.middle_name = value.to_string(),
+                "age" => inmate.age = value.as_u64(),
+                "sex" => inmate.sex = parsers::parse_serde_sex(value),
+                "birthyear" => inmate.birth_year = parsers::parse_serde_date(value),
+                "height" => inmate.height = parsers::parse_serde_height(value),
+                "weight" => inmate.weight = parsers::parse_serde_weight(value),
+                "totalbondamount" => inmate.bond = value.as_u64(),
+                "arrestdate" => inmate.arrest_date = parsers::parse_serde_date(value),
+                "arrestingagency" => inmate.arresting_agency = parsers::parse_serde_not_empty_string(value),
+                "bookingagency" => inmate.booking_agency = parsers::parse_serde_not_empty_string(value),
+                "race" => inmate.race = parsers::parse_serde_not_empty_string(value),
+                "arrestnotes" => inmate.arrest_notes.push_str(&value.to_string()),
+                "holdingfacility" => inmate.holding_facility = parsers::parse_serde_not_empty_string(value),
+                "releasedate" => inmate.release_date = parsers::parse_serde_date(value),
+                "courtdate" => inmate.court_date = parsers::parse_serde_date(value),
+                "imageid" => inmate.image_id = parsers::parse_serde_not_empty_string(value),
+                "homeaddress" => inmate.home_address = parsers::parse_serde_not_empty_string(value),
+                "caseid"|"docketnumber" => inmate.case_id = parsers::parse_serde_not_empty_string(value),
+                "charges" => _RawCharge::parse_serde_charges(&mut inmate.charges, value),
                 _ => {
                     inmate.notes.push_str(field);
                     inmate.notes.push_str(": ");
@@ -148,7 +269,7 @@ pub mod preprocessor {
             }
         }
 
-        fn drop(&mut self) {
+        pub fn drop(&mut self) {
 
         }
     }
