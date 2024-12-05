@@ -1,10 +1,56 @@
-
-pub mod parsers {
+pub mod parsers { 
     use serde_json::Value;
     use chrono::{DateTime, Utc};
 
+    pub fn parse_serde_not_empty_as_string(value: &Value) -> Option<String> {
+        match value {
+            Value::Null => None,
+            Value::Bool(b) => Some(b.to_string()),
+            Value::Number(n) => Some(value.to_string()),
+            Value::Array(a) => {
+                if a.len() > 0 {
+                    return Some(value.to_string());
+                } else {
+                    None
+                }
+            }
+            Value::Object(o) => {
+                if o.is_empty() {
+                    return None;
+                } else {
+                    return Some(value.to_string());
+                }
+            }
+            Value::String(s) => {
+                if s.len() > 0 {
+                    return Some(s.to_string());
+                } else {
+                    return None;
+                }
+            }
+        }
+    }
+
     pub fn parse_serde_date(value: &Value) -> Option<DateTime<Utc>> {
-        todo!("Date parser");
+        match value {
+            Value::Number(n) => {
+                DateTime::from_timestamp(n.as_i64().expect("Failed to parse epoch from json"), 0)
+            },
+            Value::String(s) => {
+                let mut time = DateTime::parse_from_rfc2822(s);
+
+                if time.is_err() {
+                    time = DateTime::parse_from_rfc3339(s);
+                }
+
+                if time.is_ok() {
+                    return Some(time.unwrap().into());
+                }
+
+                return None;
+            },
+            _ => None,
+        }
     }
 
     pub fn parse_serde_sex(value: &Value) -> Option<bool> {
@@ -36,7 +82,7 @@ pub mod parsers {
                 let bytes = s.as_bytes();
                 if bytes[1] == '\'' as u8 {
                     let ft = s[0..1].parse::<u8>();
-                    let inches = s[2..4].parse::<u8>();
+                    let inches = s[3..5].parse::<u8>();
 
                     if ft.is_err() || inches.is_err() {
                         return None;

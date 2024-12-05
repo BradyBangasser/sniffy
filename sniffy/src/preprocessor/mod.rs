@@ -69,7 +69,14 @@ pub mod preprocessor {
                     "description" => charge.statute = parsers::parse_serde_not_empty_string(&obj[key]),
                     "docketnumber" => charge.docket_number = parsers::parse_serde_not_empty_string(&obj[key]),
                     _ => {
+                        let v = parsers::parse_serde_not_empty_as_string(&obj[key]);
 
+                        if v.is_some() {
+                            charge.notes.push_str(key);
+                            charge.notes.push_str(": ");
+                            charge.notes.push_str(&v.unwrap());
+                            charge.notes.push('\n');
+                        }
                     }
                 };
             }
@@ -180,10 +187,14 @@ pub mod preprocessor {
                 "caseid"|"docketnumber" => inmate.case_id = parsers::parse_serde_not_empty_string(value),
                 "charges" => _RawCharge::parse_serde_charges(&mut inmate.charges, value),
                 _ => {
-                    inmate.notes.push_str(field);
-                    inmate.notes.push_str(": ");
-                    inmate.notes.push_str(&value.to_string());
-                    inmate.notes.push_str("\n");
+                    let v = parsers::parse_serde_not_empty_as_string(value);
+
+                    if v.is_some() {
+                        inmate.notes.push_str(field);
+                        inmate.notes.push_str(": ");
+                        inmate.notes.push_str(&v.unwrap());
+                        inmate.notes.push('\n');
+                    }
                 }
             }
         }
@@ -194,7 +205,6 @@ pub mod preprocessor {
             let mut inmates: Vec<_RawInmate> = Vec::new();
 
             if v["inmates"].is_array() {
-                println!("len: {}", v["inmates"].as_array().unwrap().len());
                 for inmate in v["inmates"].as_array().unwrap() {
                     if inmate.is_object() {
                         let inmate_obj = inmate.as_object().unwrap();
@@ -231,23 +241,18 @@ pub mod preprocessor {
                                     break;
                                 }
                                 thread::sleep(std::time::Duration::from_secs(1));
-                                println!("{}", run.load(Ordering::Relaxed));
 
                                 continue;
                             }
 
                             let mut invec = input.lock().unwrap();
-                            let json = match invec.pop() {
+                            match invec.pop() {
                                 Some(v) => {
                                     n_input.store(input_len - 1, Ordering::Relaxed);
                                     Self::parse_json(v)
                                 },
                                 None => continue,
                             };
-
-                            for i in json.expect("AHHH") {
-                                println!("{}", i.notes);
-                            }
                         }
                     })
                 );

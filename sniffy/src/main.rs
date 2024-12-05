@@ -1,4 +1,5 @@
-pub mod preprocessor;
+mod preprocessor;
+mod processor;
 pub mod types;
 mod module_loader;
 
