@@ -273,9 +273,11 @@ pub mod preprocessor {
                 th.join().unwrap();
             }
         }
+    }
 
-        pub fn drop(&mut self) {
-
+    impl Drop for Preprocessor {
+        fn drop(&mut self) {
+            println!("DROP");
         }
     }
 }

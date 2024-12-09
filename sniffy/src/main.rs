@@ -1,7 +1,9 @@
 mod preprocessor;
 mod processor;
-pub mod types;
+mod database;
 mod module_loader;
+mod stream;
+pub mod types;
 
 use std::ptr::null;
 
