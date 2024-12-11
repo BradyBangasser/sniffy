@@ -6,7 +6,7 @@ pub mod parsers {
         match value {
             Value::Null => None,
             Value::Bool(b) => Some(b.to_string()),
-            Value::Number(n) => Some(value.to_string()),
+            Value::Number(_) => Some(value.to_string()),
             Value::Array(a) => {
                 if a.len() > 0 {
                     return Some(value.to_string());

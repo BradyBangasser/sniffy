@@ -6,9 +6,11 @@ mod stream;
 pub mod types;
 
 use std::ptr::null;
+use crate::stream::stream::Stream;
 
 fn main() {
-    let mut pp = crate::preprocessor::preprocessor::Preprocessor::new();    
+    let s = Stream::new();
+    let mut pp = crate::preprocessor::preprocessor::Preprocessor::new(s);    
     let mut nmods: u16 = 0;
     let mut omod = module_loader::ModuleOut {
         enc: 0,
