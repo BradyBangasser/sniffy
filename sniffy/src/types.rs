@@ -1,15 +1,23 @@
 pub mod types {
     use crate::preprocessor::parsers::parsers;
+    use chrono::{DateTime,Utc};
+
+    type Bond = u64;
+    type Age = u8;
+    type Height = u8;
+    type Weight = u16;
+    type Sex = bool;
+
     #[derive(Debug)]
     pub struct RawInmate {
         pub first_name: String,
         pub middle_name: String,
         pub last_name: String,
-        pub age: Option<u64>,
-        pub sex: Option<bool>,
-        pub height: Option<u8>,
-        pub weight: Option<u16>,
-        pub bond: Option<u64>,
+        pub age: Option<Age>,
+        pub sex: Option<Sex>,
+        pub height: Option<Height>,
+        pub weight: Option<Weight>,
+        pub bond: Option<Bond>,
         pub birth_year: Option<chrono::DateTime<chrono::Utc>>,
         pub arrest_date: Option<chrono::DateTime<chrono::Utc>>,
         pub arresting_agency: Option<String>,
@@ -64,6 +72,7 @@ pub mod types {
         pub statute: Option<String>,
         pub statute_description: Option<String>,
         pub docket_number: Option<String>,
+        pub timestamp: Option<DateTime<Utc>>,
         pub notes: String
     }
 
@@ -77,6 +86,7 @@ pub mod types {
                 statute: None,
                 statute_description: None,
                 docket_number: None,
+                timestamp: None,
                 notes: String::new()
             }
         }
@@ -141,9 +151,74 @@ pub mod types {
         pub weight: u16,
         pub birth_year: chrono::DateTime<chrono::Utc>,
         pub race: String,
-        pub added: chrono::DateTime<chrono::Utc>,
+        pub added: DateTime<Utc>,
+        pub updated: DateTime<Utc>,
         pub notes: String,
         pub phone_number: Option<u32>,
-        pub home_address: Option<String>
+        pub home_address: Option<String>,
+        pub versioning: String,
+    }
+
+    #[derive(Debug)]
+    pub struct Arrest {
+        pub pid: [u8; 32],
+        pub id: u64,
+        pub booked: DateTime<Utc>,
+        pub agency_id: String,
+        pub bond: Bond,
+        pub initial_bond: Bond,
+        pub release_date: Option<DateTime<Utc>>,
+        pub holding_facility_id: String,
+        pub notes: String,
+        pub versioning: String,
+    }
+
+    #[derive(Debug)]
+    pub struct Charge {
+        pub id: u64,
+        pub aid: u64,
+        pub sid: String,
+        pub bond: Bond,
+        pub initial_bond: Bond,
+        pub bond_status: String,
+        pub timestamp: DateTime<Utc>,
+        pub docket_number: Option<String>,
+        pub court_date: Option<DateTime<Utc>>,
+        pub notes: String,
+        pub versioning: String,
+    }
+
+    #[derive(Debug)]
+    pub struct Statute {
+        pub id: String,
+        pub human_id: String,
+        pub description: String,
+        pub notes: String,
+        pub versioning: String,
+    }
+
+    #[derive(Debug)]
+    pub struct Mugshot {
+        pub id: u64, // Same as Arrest ID
+        pub pid: [u8; 32],
+        pub data: Option<Vec<u8>>,
+        pub url: Option<String>,
+        pub format: u8,
+        pub notes: String,
+        pub versioning: String,
+    }
+
+    #[derive(Debug)]
+    pub struct Agency {
+        pub id: String,
+        pub notes: String,
+        pub versioning: String,
+        pub title: String,
+    }
+
+    #[derive(Debug)]
+    pub struct RosterEntry {
+        pub pid: [u8; 32],
+        pub aid: u64
     }
 }

@@ -4,13 +4,13 @@ mod formatting;
 pub mod processor {
     use crate::database::database::Connection;
     use crate::stream::stream::Stream;
-    use crate::types::types::{RawInmate, Person};
+    use crate::types::types::{RawInmate, Person, Arrest, Charge, RawCharge};
     use super::id::id;
     use super::formatting::formatting;
     use std::sync::Arc;
     use std::boxed::Box;
     use std::thread;
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use chrono::{Utc, Datelike};
     use chrono::prelude::*;
 
@@ -21,6 +21,7 @@ pub mod processor {
         input: Arc<Stream<RawInmate>>,
         threads: Vec<std::thread::JoinHandle<()>>,
         run: Arc<AtomicBool>,
+        aid: Arc<AtomicU64>,
     }
 
     impl Processor {
@@ -30,6 +31,7 @@ pub mod processor {
                 input: input_stream.clone(),
                 threads: Vec::new(),
                 run: Arc::new(AtomicBool::new(true)),
+                aid: Arc::new(AtomicU64::new(conn.count_arrests())),
             })
         }
 
@@ -76,7 +78,7 @@ pub mod processor {
             }
         }
 
-        fn process_inmate(mut inmate: RawInmate, conn: &Arc<Connection>) {
+        fn process_inmate(mut inmate: RawInmate, conn: &Arc<Connection>, aidc: Arc<AtomicU64>) ->Option<()> {
             if inmate.birth_year.is_none() {
                 if inmate.age.is_none() {
                     todo!("Handle null age");
@@ -106,6 +108,7 @@ pub mod processor {
 
             if todo!("Check current roster") {
                 // Logic for if the user is currently on the inmate roster
+                let arrest = todo!("Get relevent arrest");
             } else {
                 if person_record.is_none() {
                     person = Person {
@@ -122,6 +125,8 @@ pub mod processor {
                         birth_year: inmate.birth_year.expect("Birth year cannot be null"),
                         phone_number: None,
                         notes: String::new(),
+                        updated: Utc::now(),
+                        versioning: String::new(),
                     };
 
                     if !conn.insert_person(&person) {
@@ -130,11 +135,71 @@ pub mod processor {
                     }
                 }
 
+                if inmate.arresting_agency.is_none() {
+                    if inmate.booking_agency.is_some() {
+                        inmate.arresting_agency = inmate.booking_agency.clone();
+                    } else {
+                        todo!("Module default agency");
+                    }
+                }
 
+                let aid = aidc.fetch_add(1, Ordering::Relaxed);
 
+                let (booked_at, charges) = Self::parse_charges(aid, inmate.charges)?;
 
-                
+                // Create arrest
+                let mut arrest = Arrest {
+                    agency_id: id::compute_agency_id(&inmate.arresting_agency.unwrap()),
+                    bond: inmate.bond.unwrap_or(0),
+                    initial_bond: inmate.bond.unwrap_or(0),
+                    holding_facility_id: id::compute_facility_id(&inmate.holding_facility.unwrap()),
+                    id: aid,
+                    pid: person.id,
+                    notes: inmate.notes,
+                    versioning: String::new(),
+                    release_date: inmate.release_date,
+                    booked: booked_at,
+                };
+
+                todo!("File arrest and charges");
             }
+
+            None
+        }
+
+        pub fn parse_charges(aid: u64, raw_charges: Vec<RawCharge>) -> Option<(DateTime<Utc>, Vec<Charge>)> {
+            let mut charges = Vec::<Charge>::new();
+            let mut booked_at: DateTime<Utc> = Utc::now(); // eariest charged_at time
+            for raw_charge in raw_charges {
+
+                if raw_charge.statute_id.is_none() {
+                    return None;
+                }
+
+                let mut sid = String::from("IA-");
+                sid.push_str(&raw_charge.statute_id.unwrap());
+
+                if raw_charge.datetime.is_some() {
+                    if booked_at > raw_charge.datetime? {
+                        booked_at = raw_charge.datetime.unwrap();
+                    }
+                }
+
+                charges.push(Charge {
+                    id: 0, // Autoinc in database, idc about the value until after insertion
+                    bond: raw_charge.bond.unwrap_or(0),
+                    initial_bond: raw_charge.bond.unwrap_or(0),
+                    bond_status: raw_charge.bond_status.unwrap_or(String::from("active")), // Just assume the
+                    sid,
+                    aid,
+                    docket_number: raw_charge.docket_number,
+                    court_date: None,
+                    timestamp: raw_charge.datetime.unwrap_or(booked_at),
+                    versioning: String::new(),
+                    notes: raw_charge.notes,
+                })
+            }
+            None
         }
     }
 
