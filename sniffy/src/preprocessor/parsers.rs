@@ -1,6 +1,7 @@
 pub mod parsers { 
     use serde_json::Value;
     use chrono::{DateTime, Utc};
+    use crate::types::types::{Age, Weight};
 
     pub fn parse_serde_not_empty_as_string(value: &Value) -> Option<String> {
         match value {
@@ -104,10 +105,15 @@ pub mod parsers {
         }
     }
 
-    pub fn parse_serde_weight(value: &Value) -> Option<u8> {
+    pub fn parse_serde_age(value: &Value) -> Option<Age> {
+        let age = value.as_u64()?;
+        return Some(age as u8);
+    }
+
+    pub fn parse_serde_weight(value: &Value) -> Option<Weight> {
         match value {
             Value::String(v) => {
-                let p = v.parse::<u8>();
+                let p = v.parse::<Weight>();
                 if p.is_ok() {
                     return Some(p.unwrap());
                 }

@@ -37,7 +37,7 @@ pub mod preprocessor {
                 "firstname" => inmate.first_name = value.to_string(),
                 "lastname" => inmate.last_name = value.to_string(),
                 "middlename" => inmate.middle_name = value.to_string(),
-                "age" => inmate.age = value.as_u64(),
+                "age" => inmate.age = parsers::parse_serde_age(value),
                 "sex" => inmate.sex = parsers::parse_serde_sex(value),
                 "birthyear" => inmate.birth_year = parsers::parse_serde_date(value),
                 "height" => inmate.height = parsers::parse_serde_height(value),
@@ -140,7 +140,7 @@ pub mod preprocessor {
 
     impl Drop for Preprocessor {
         fn drop(&mut self) {
-            println!("DROP");
+            self.despool();
         }
     }
 }

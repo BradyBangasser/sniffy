@@ -12,9 +12,12 @@ pub mod id {
             return None;
         }
 
-        let id_str = format!("{}:{}:{}:{}:{}", inmate.last_name.to_lowercase(), inmate.first_name.to_lowercase(), inmate.sex.unwrap(), inmate.middle_name.to_lowercase(), inmate.birth_year.unwrap().year());
+        _compute_id(inmate.last_name.to_lowercase(), inmate.first_name.to_lowercase(), inmate.sex.unwrap(), inmate.middle_name.to_lowercase(), inmate.birth_year.unwrap().year())
+    }
 
+    pub fn _compute_id(last: String, first: String, sex: bool, middle: String, birth_year: i32) -> Option<[u8; 32]> {
         let mut s256 = Sha256::new();
+        let id_str = format!("{}:{}:{}:{}:{}", last.to_lowercase(), first.to_lowercase(), sex, middle.to_lowercase(), birth_year);
         s256.update(id_str);
 
         return Some(s256.finalize().into());

@@ -2,11 +2,11 @@ pub mod types {
     use crate::preprocessor::parsers::parsers;
     use chrono::{DateTime,Utc};
 
-    type Bond = u64;
-    type Age = u8;
-    type Height = u8;
-    type Weight = u16;
-    type Sex = bool;
+    pub type Bond = u64;
+    pub type Age = u8;
+    pub type Height = u8;
+    pub type Weight = u16;
+    pub type Sex = bool;
 
     #[derive(Debug)]
     pub struct RawInmate {
@@ -140,7 +140,7 @@ pub mod types {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Person {
         pub id: [u8; 32],
         pub first_name: String,

@@ -1,4 +1,4 @@
-mod id;
+pub mod id;
 mod formatting;
 
 pub mod processor {
@@ -8,7 +8,6 @@ pub mod processor {
     use super::id::id;
     use super::formatting::formatting;
     use std::sync::Arc;
-    use std::boxed::Box;
     use std::thread;
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use chrono::{Utc, Datelike};
@@ -25,14 +24,17 @@ pub mod processor {
     }
 
     impl Processor {
-        pub fn new(input_stream: Arc<Stream<RawInmate>>, conn: Arc<Connection>) -> Box<Self> {
-            return Box::new(Self {
+        pub fn new(input_stream: Arc<Stream<RawInmate>>, conn: Arc<Connection>) -> Self {
+            let mut s = Self {
                 conn: Arc::clone(&conn),
                 input: input_stream.clone(),
                 threads: Vec::new(),
                 run: Arc::new(AtomicBool::new(true)),
                 aid: Arc::new(AtomicU64::new(conn.count_arrests())),
-            })
+            };
+
+            s.spool();
+            return s;
         }
 
         fn spool(&mut self) {
@@ -40,6 +42,7 @@ pub mod processor {
                 let input = Arc::clone(&self.input);
                 let run = Arc::clone(&self.run);
                 let conn = Arc::clone(&self.conn);
+                let aidc = Arc::clone(&self.aid);
 
                 self.threads.push(
                     thread::spawn(move || {
@@ -59,7 +62,7 @@ pub mod processor {
                                 continue;
                             }
 
-                            Self::process_inmate(inmate.unwrap(), &conn);
+                            Self::process_inmate(inmate.unwrap(), &conn, aidc.clone());
                         }
                     })
                 )
@@ -86,7 +89,7 @@ pub mod processor {
 
                 let now = Utc::now();
                 let age = inmate.age.unwrap();
-                inmate.birth_year = Some(Utc.with_ymd_and_hms(now.year() - age as i32, 0, 0, 0, 0, 0).unwrap());
+                inmate.birth_year = Some(Utc.with_ymd_and_hms(now.year() - age as i32, 1, 1, 1, 1, 1).unwrap());
 
             }
 
@@ -100,7 +103,7 @@ pub mod processor {
 
             let person_record = conn.query_person_by_id(&person_id);
 
-            let mut person: Person;
+            let mut person: Arc<Person>;
 
             if person_record.is_some() {
                 person = person_record.unwrap();
@@ -111,7 +114,7 @@ pub mod processor {
                 let arrest = todo!("Get relevent arrest");
             } else {
                 if person_record.is_none() {
-                    person = Person {
+                    person = Arc::new(Person {
                         id: person_id,
                         first_name: formatting::capitalize_name(inmate.first_name),
                         last_name: formatting::capitalize_name(inmate.last_name),
@@ -127,7 +130,7 @@ pub mod processor {
                         notes: String::new(),
                         updated: Utc::now(),
                         versioning: String::new(),
-                    };
+                    });
 
                     if !conn.insert_person(&person) {
                         // cry
