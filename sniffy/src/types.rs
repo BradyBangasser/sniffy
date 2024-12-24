@@ -159,7 +159,7 @@ pub mod types {
         pub versioning: String,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Arrest {
         pub pid: [u8; 32],
         pub id: u64,
@@ -216,7 +216,7 @@ pub mod types {
         pub title: String,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Copy, Clone)]
     pub struct RosterEntry {
         pub pid: [u8; 32],
         pub aid: u64
