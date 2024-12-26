@@ -9,6 +9,7 @@ pub mod types {
     pub type Sex = bool;
 
     #[derive(Debug)]
+    #[repr(C)]
     pub struct RawInmate {
         pub first_name: String,
         pub middle_name: String,

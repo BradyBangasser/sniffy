@@ -2,7 +2,6 @@ pub mod parsers;
 
 pub mod preprocessor {
     use std::thread;
-    use crate::stream::stream::Stream;
     use std::sync::{Mutex, Arc};
     use std::sync::atomic::{AtomicBool,AtomicU32,Ordering};
     use crate::types::types::{RawInmate, RawCharge};
@@ -11,7 +10,7 @@ pub mod preprocessor {
     const MAX_THREADS: u8 = 1;
 
     pub struct Preprocessor {
-        output: Arc<Stream<RawInmate>>,
+        output: Arc<Vec<RawInmate>>,
         threads: Vec<std::thread::JoinHandle<()>>,
         input: Arc<Mutex<Vec<String>>>,
         n_input: Arc<AtomicU32>,
@@ -19,7 +18,7 @@ pub mod preprocessor {
     }
 
     impl Preprocessor {
-        pub fn new(out_stream: Arc<Stream<RawInmate>>) -> Preprocessor {
+        pub fn new(out_stream: Arc<Vec<RawInmate>>) -> Preprocessor {
             let mut pp = Preprocessor {
                 output: Arc::clone(&out_stream),
                 threads: Vec::new(),
@@ -68,9 +67,11 @@ pub mod preprocessor {
             }
         }
 
-        fn parse_json(output: &Arc<Stream<RawInmate>>, json: String) {
+        fn parse_json(json: String) -> Vec<RawInmate> {
             let mjson = json.to_lowercase();
             let v: serde_json::Value = serde_json::from_str(&mjson).unwrap();
+
+            let mut output = Vec::new();
 
             if v["inmates"].is_array() {
                 for inmate in v["inmates"].as_array().unwrap() {
@@ -85,6 +86,8 @@ pub mod preprocessor {
                     }
                 }
             }
+
+            return output;
         }
 
         fn spool(self: &mut Self) {
@@ -112,7 +115,7 @@ pub mod preprocessor {
                             match invec.pop() {
                                 Some(v) => {
                                     n_input.store(input_len - 1, Ordering::Relaxed);
-                                    Self::parse_json(&output, v)
+                                    Self::parse_json(v)
                                 },
                                 None => continue,
                             };

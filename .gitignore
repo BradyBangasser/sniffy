@@ -1,3 +1,5 @@
 api/routes/build.go
 sniffy/target
 sniffy/.cache
+sniffy-cprocessor/lib
+sniffy-cprocessor/include
