@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <poll.h>
+
+#include "socket-handler.h"
 
 #define SOCKET_PATH "/tmp/sniffy.socket"
 
@@ -46,12 +49,19 @@ void slisten() {
     }
 
     while (1) {
-        asock = accept(sock, NULL, NULL);
-        if (asock == -1) {
+        struct pollfd p;
+        p.events = POLLIN;
+        p.fd = accept(sock, NULL, NULL);
+        if (p.fd == -1) {
             printf("ERROR: %d\n", errno);
             break;
         }
 
-        printf("Accepted socket connection: %d\n", asock);
+        printf("Accepted socket connection: %d\n", p.fd);
+
+        while (poll(&p, 1, 300) < 1);
+
+        socket_handler(&p.fd);
+        // knock knock, race condition
     }
 }
