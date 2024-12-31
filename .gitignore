@@ -4,3 +4,5 @@ sniffy/.cache
 sniffy-cprocessor/lib
 sniffy-cprocessor/include
 sniffy-cprocessor/out
+sniffy-cprocessor/.cache
+*.out
