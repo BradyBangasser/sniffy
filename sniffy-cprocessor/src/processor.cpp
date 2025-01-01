@@ -25,10 +25,11 @@ void Processor::process_json_string(rapidjson::StringStream str) {
 
     std::cout << inmates.Size() << std::endl;
 
-    for (auto &i : inmates) {
+    for (auto &inmate : inmates) {
         rapidjson::StringBuffer s;
         rapidjson::Writer<rapidjson::StringBuffer> writer(s);
-        i.Accept(writer);
-        std::cout << s.GetString() << std::endl;
+        inmate.Accept(writer);
+
+        Arrest::from_json(inmate.GetObject());
     }
 }

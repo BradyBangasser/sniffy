@@ -1,14 +1,10 @@
 #include "arrest.hpp"
 
-template <typename T> Arrest Arrest::from_json(rapidjson::GenericObject<true, T> obj) {
-    Arrest arr;
-    
-    rapidjson::GenericMember curs = obj.begin();
-    while (curs != obj.end()) {
-        switch (curs.name) {
+uint64_t Arrest::id_c = 0;
 
-        }
-    }
+Arrest::Arrest() : docket_number{ 0 }, id{ 0 } {
+}
 
+Arrest::~Arrest() {
 
 }
