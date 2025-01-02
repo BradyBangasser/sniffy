@@ -1,0 +1,23 @@
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+    enum race {
+        SR_BLACK,
+        SR_WHITE,
+        SR_ASIAN,
+        SR_PACIFIC,
+        SR_NATIVE,
+        SR_UNKNOWN,
+    };
+
+    enum sex {
+        S_FEMALE,
+        S_MALE
+    };
+
+#ifdef __cplusplus
+}
+#endif

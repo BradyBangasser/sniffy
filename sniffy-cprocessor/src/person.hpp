@@ -4,7 +4,9 @@
 #include <vector>
 #include <rapidjson/document.h>
 
-#include "arrest.hpp"
+#include "global.h"
+#include "sex.h"
+#include "race.h"
 
 class Person {
     friend class Arrest;
@@ -13,6 +15,8 @@ class Person {
         std::string middle_name;
         std::string last_name;
         std::string *suffix;
+        enum sex sex;
+        enum race race;
         std::vector<std::string> notes;
         std::string versioning;
         uint8_t id[32];
@@ -77,5 +81,18 @@ class Person {
         inline bool add_note(std::string str) {
             notes.push_back(str);
             return true;
+        }
+
+        inline void set_race(enum race race) {
+            this->race = race;
+        }
+        inline void set_race(std::string race) { this->race = str_to_race(race.c_str()); }
+
+        inline void set_sex(enum sex sex) {
+            this->sex = sex;
+        }
+
+        inline void set_sex(std::string sex) {
+            this->sex = str_to_sex(sex.c_str());
         }
 };

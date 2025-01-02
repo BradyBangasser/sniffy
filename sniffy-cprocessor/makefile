@@ -10,12 +10,12 @@ iflags := -I$(inc)
 
 all: src
 
-src: $(inc)/rapidjson sniffy.out
+src: $(inc)/global.h $(inc)/rapidjson sniffy.out
 
 clean:
 	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib)
 
-sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o
+sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o
 	clang++ $^ -o $@ $(iflags)
 
 $(out):
@@ -29,6 +29,9 @@ $(inc):
 
 $(inc)/rapidjson: $(inc) $(lib)/rapidjson
 	cp -r $(lib)/rapidjson/include/rapidjson $@
+
+$(inc)/global.h: ../global.h.in $(inc)
+	cp $< $@ # This should be a command to generate that file eventually
 
 $(lib)/rapidjson: $(lib)
 	git -C $(lib) clone https://github.com/Tencent/rapidjson

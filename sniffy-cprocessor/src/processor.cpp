@@ -21,7 +21,7 @@ void Processor::process_json_string(rapidjson::StringStream str) {
         return;
     }
 
-    rapidjson::GenericArray inmates = doc.IsObject() ? doc.GetObject().FindMember("Inmates")->value.GetArray() : doc.GetArray();
+    rapidjson::GenericArray inmates = doc.IsObject() ? doc.GetObject().FindMember("inmates")->value.GetArray() : doc.GetArray();
 
     std::cout << inmates.Size() << std::endl;
 

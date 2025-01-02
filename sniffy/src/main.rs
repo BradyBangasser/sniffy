@@ -17,12 +17,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for module in m {
             println!("Executing module {:?}", std::ffi::CStr::from_bytes_until_nul(&module.module_path)?);
             module_loader::exec_module(module.id, &mut out);
-            let json = std::ffi::CStr::from_ptr(out.out).to_bytes();
-
-            println!("{}", json.len());
+            let mut str = String::from(std::ffi::CStr::from_ptr(out.out).to_str().unwrap());
+            str = str.to_lowercase();
+            let json = str.into_bytes();
 
             let _ = stream.write_all(&json.len().to_ne_bytes());
-            let _ = stream.write_all(json);
+            let _ = stream.write_all(&json);
         }
     }
     Ok(())
