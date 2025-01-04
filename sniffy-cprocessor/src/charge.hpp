@@ -96,9 +96,9 @@ class Charge {
                 }
 
                 if (curs->value.IsString()) {
-                    c.notes.push_back(curs->value.GetString());
-                } else {
-                    std::cout << "TYPE: " << curs->value.GetType() << std::endl;
+                    if (curs->value.GetStringLength() <= 0) continue;
+                    std::string key = curs->name.GetString();
+                    c.notes.push_back(key + ": " + curs->value.GetString());
                 }
             }
 

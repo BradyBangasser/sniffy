@@ -17,4 +17,6 @@ namespace stringification {
 
         return str;
     }
+
+    char *capitialize_name(char *name);
 }

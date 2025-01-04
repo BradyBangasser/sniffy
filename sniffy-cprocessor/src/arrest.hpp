@@ -3,10 +3,10 @@
 #include "charge.hpp"
 #include "stringification.hpp"
 #include "person.hpp"
+#include "logging.h"
 
 #include <rapidjson/document.h>
 #include <vector>
-#include <iostream>
 
 class Arrest {
     private:
@@ -20,18 +20,47 @@ class Arrest {
 
         std::vector<Charge> charges;
         const char docket_number[16];
+        std::string booking_agency;
 
         Arrest();
 
         template <typename E, typename A> static bool process_json_field(Arrest &arr, std::string field, rapidjson::GenericValue<E, A> &val) {
+            DEBUGF("Handling field \"%s\"\n", field.c_str());
             if (field == "firstname") return arr.person->set_first_name(val);
             if (field == "middlename") return arr.person->set_middle_name(val);
             if (field == "lastname") return arr.person->set_last_name(val);
             if (field == "suffix") return arr.person->set_suffix(val);
             if (field == "race") { arr.person->set_race(val.GetString()); return true; }
             if (field == "sex") { arr.person->set_sex(val.GetString()); return true; }
+            if (field == "primarycharge" || field == "primarychargedescription") return true; 
+            if (field == "height") return arr.person->set_height(val.GetString());
             if (field == "charges") {
                 arr.charges = Charge::vec_from_json(arr.id, val.GetArray());
+                return true;
+            }
+
+            if (field == "bookingagency") {
+                char agency[val.GetStringLength() + 1];
+                agency[val.GetStringLength()] = 0;
+                memcpy(agency, val.GetString(), val.GetStringLength());
+                arr.booking_agency = stringification::capitialize_name(agency);
+                return true;
+            }
+
+            if (field == "age") {
+                if (val.IsUint()) return arr.person->set_birthyear_by_age(val.GetUint());
+                if (val.IsString()) return arr.person->set_birthyear_by_age(atoi(val.GetString()));
+                return false;
+            }
+
+            if (field == "weight") {
+                if (val.IsUint()) return arr.person->set_weight(val.GetUint());
+                if (val.IsString()) return arr.person->set_weight(val.GetString());
+                return false;
+            }
+
+            if (field == "birthyear") {
+                arr.person->set_birthyear(val.GetUint());
                 return true;
             }
             
@@ -54,14 +83,6 @@ class Arrest {
             while (curs != obj.MemberEnd()) {
                 process_json_field(arr, curs->name.GetString(), curs->value);
                 curs++;
-            }
-
-            for (std::string note : arr.notes) {
-                std::cout << note << " " << std::endl;
-            }
-
-            for (Charge c : arr.charges) {
-                std::cout << "Charge: " << c.get_sid() << "\n\t" << c.get_notes()[0] << std::endl;
             }
         }
 

@@ -6,7 +6,7 @@ out := $(dir)/out
 src := $(dir)/src
 lib := $(dir)/lib
 inc := $(dir)/include
-iflags := -I$(inc)
+iflags := -I$(inc) -Wall
 
 all: src
 
@@ -15,7 +15,7 @@ src: $(inc)/global.h $(inc)/rapidjson sniffy.out
 clean:
 	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib)
 
-sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o
+sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o
 	clang++ $^ -o $@ $(iflags)
 
 $(out):

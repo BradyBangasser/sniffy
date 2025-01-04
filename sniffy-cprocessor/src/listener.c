@@ -8,6 +8,7 @@
 #include <poll.h>
 
 #include "socket-handler.h"
+#include "logging.h"
 
 #define SOCKET_PATH "/tmp/sniffy.socket"
 
@@ -17,18 +18,18 @@ void slisten() {
     const int enable = 1;
 
     if (!access(SOCKET_PATH, F_OK)) {
-        printf("Removing file\n");
+        DEBUGF("Removing existing socket at %s\n", SOCKET_PATH);
         remove(SOCKET_PATH);
     }
 
     sock = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (sock == -1) {
-        printf("Socket creation failed, errno %d\n", errno);
+        ERRORF("Socket creation failed, errno %d\n", errno);
         return;
     }
 
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
-        printf("Error setting socket option, errno: %d\n", errno);
+        ERRORF("Error setting socket option, errno: %d\n", errno);
         return;
     }
     
@@ -38,13 +39,13 @@ void slisten() {
 
     result = bind(sock, (struct sockaddr *) &addr, sizeof(addr));
     if (result) {
-        printf("Bind failed, errno: %d\n", errno);
+        ERRORF("Bind failed, errno: %d\n", errno);
         return;
     }
 
     result = listen(sock, 5);
     if (result) {
-        printf("Listen failed, errno: %d\n", errno);
+        ERRORF("Listen failed, errno: %d\n", errno);
         return;
     }
 
@@ -53,11 +54,11 @@ void slisten() {
         p.events = POLLIN;
         p.fd = accept(sock, NULL, NULL);
         if (p.fd == -1) {
-            printf("ERROR: %d\n", errno);
+            ERRORF("Failed to accept connection, errno: %d\n", errno);
             break;
         }
 
-        printf("Accepted socket connection: %d\n", p.fd);
+        INFOF("Accepted socket connection: %d\n", p.fd);
 
         while (poll(&p, 1, 300) < 1);
 

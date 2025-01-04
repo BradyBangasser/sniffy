@@ -17,6 +17,9 @@ class Person {
         std::string *suffix;
         enum sex sex;
         enum race race;
+        uint16_t birth_year;
+        uint8_t height; // in inches
+        uint16_t weight;
         std::vector<std::string> notes;
         std::string versioning;
         uint8_t id[32];
@@ -24,6 +27,8 @@ class Person {
         Person();
     public:
         Person(uint8_t id[32]);
+
+        inline std::vector<std::string> get_notes() { return notes; }
 
         inline bool set_first_name(const std::string &str) {
             if (str.length() <= 0) {
@@ -94,5 +99,45 @@ class Person {
 
         inline void set_sex(std::string sex) {
             this->sex = str_to_sex(sex.c_str());
+        }
+
+        inline void set_birthyear(uint16_t birthyear) {
+            this->birth_year = birthyear;
+        }
+
+        inline bool set_birthyear_by_age(uint8_t age) {
+            if (age > 150) {
+                // As of my writing of this software, the max theoretical age is roughly 125 with current technology, so 150 is the max age of a human
+                return false;
+            }
+
+            // Get current year
+            time_t now = time(NULL);
+            tm *t = gmtime(&now);
+
+            this->birth_year = t->tm_year + 1900 - age;
+            char datestring[80] = { 0 };
+            strftime((char *) datestring, sizeof(datestring), "Birth Year was calculated by age on %F at %H:%M ZULU", t);
+            this->add_note(datestring);
+            return true;
+        }
+
+        // returns 0 on failure
+        static inline uint32_t parse_height(std::string str) { return parse_height(str.c_str()); }
+        static uint32_t parse_height(const char *);
+
+        inline bool set_height(const char *height) {
+            this->height = parse_height(height);
+            return height == 0;
+        }
+
+        inline bool set_weight(const char *str) {
+            this->weight = atoi(str);
+            return true;
+        }
+
+        inline bool set_weight(uint16_t weight) {
+            this->weight = weight;
+            return true;
         }
 };
