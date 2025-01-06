@@ -5,4 +5,5 @@ sniffy-cprocessor/lib
 sniffy-cprocessor/include
 sniffy-cprocessor/out
 sniffy-cprocessor/.cache
+sniffy-cprocessor/compile_commands.json
 *.out

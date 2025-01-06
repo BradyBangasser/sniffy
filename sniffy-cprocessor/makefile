@@ -10,6 +10,9 @@ iflags := -I$(inc) -Wall -D_POSIX_C_SOURCE=200809L -fdiagnostics-show-category=n
 
 all: src
 
+dev: 
+	bear -- make
+
 src: $(inc)/global.h $(inc)/rapidjson sniffy.out
 
 clean:
@@ -41,3 +44,5 @@ $(out)/%.c.o: $(src)/%.c $(out)
 
 $(out)/%.cpp.o: $(src)/%.cpp $(out)
 	clang++ -c -o $@ $< $(module_compile_flags) -std=$(CXX_STD) $(iflags)
+
+.PHONY: dev clean

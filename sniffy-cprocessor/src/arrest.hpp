@@ -89,7 +89,6 @@ class Arrest {
             }
 
             arr.verify();
-            arr.upsert(database::get_connection());
 
             return arr;
         }
