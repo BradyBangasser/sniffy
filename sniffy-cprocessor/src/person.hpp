@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <cinttypes>
+#include <mysql/mysql.h>
 #include <vector>
 #include <rapidjson/document.h>
 
@@ -23,11 +23,14 @@ class Person {
         std::vector<std::string> notes;
         std::string versioning;
         uint8_t id[32];
+        bool id_set = false;
         
         Person();
     public:
         Person(uint8_t id[32]);
 
+        static std::string id_to_str(uint8_t id[32]);
+        inline std::string id_to_str() { return Person::id_to_str(this->id); }
         inline std::vector<std::string> get_notes() { return notes; }
 
         inline bool set_first_name(const std::string &str) {
@@ -140,4 +143,9 @@ class Person {
             this->weight = weight;
             return true;
         }
+
+        // verify that this is in fact a valid person, will call generate_id if necessary and if genId is true
+        bool verify(bool genId = true);
+        bool generate_id();
+        bool upsert(MYSQL *);
 };

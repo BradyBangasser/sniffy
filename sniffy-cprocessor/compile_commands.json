@@ -4,111 +4,149 @@
       "/usr/bin/clang++",
       "-c",
       "-std=c++23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/main.cpp.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/main.cpp"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/main.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/main.cpp"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/main.cpp",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/main.cpp.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/main.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/main.cpp.o"
   },
   {
     "arguments": [
       "/usr/bin/clang",
       "-c",
       "-std=c23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/listener.c.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/listener.c"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/listener.c.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/listener.c"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/listener.c",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/listener.c.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/listener.c",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/listener.c.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-c",
       "-std=c++23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/socket-handler.cpp.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/socket-handler.cpp"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/socket-handler.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/socket-handler.cpp"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/socket-handler.cpp",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/socket-handler.cpp.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/socket-handler.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/socket-handler.cpp.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-c",
       "-std=c++23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/processor.cpp.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/processor.cpp"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/processor.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/processor.cpp"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/processor.cpp",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/processor.cpp.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/processor.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/processor.cpp.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-c",
       "-std=c++23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/arrest.cpp.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/arrest.cpp"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/arrest.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/arrest.cpp"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/arrest.cpp",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/arrest.cpp.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/arrest.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/arrest.cpp.o"
   },
   {
     "arguments": [
       "/usr/bin/clang++",
       "-c",
       "-std=c++23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/person.cpp.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/person.cpp"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/person.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/person.cpp"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/person.cpp",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/person.cpp.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/person.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/person.cpp.o"
   },
   {
     "arguments": [
       "/usr/bin/clang",
       "-c",
       "-std=c23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/sex.c.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/sex.c"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/sex.c.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/sex.c"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/sex.c",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/sex.c.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/sex.c",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/sex.c.o"
   },
   {
     "arguments": [
       "/usr/bin/clang",
       "-c",
       "-std=c23",
-      "-I/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/include",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
       "-o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/race.c.o",
-      "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/race.c"
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/race.c.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/race.c"
     ],
-    "directory": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor",
-    "file": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/src/race.c",
-    "output": "/home/bardy/Documents/code/story-db-server/sniffy-cprocessor/out/race.c.o"
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/race.c",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/race.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-std=c++23",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
+      "-o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/stringification.cpp.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/stringification.cpp"
+    ],
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/stringification.cpp",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/stringification.cpp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-c",
+      "-std=c23",
+      "-I/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/include",
+      "-Wall",
+      "-o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/logging.c.o",
+      "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/logging.c"
+    ],
+    "directory": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor",
+    "file": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/src/logging.c",
+    "output": "/home/bardy/Documents/code/story-inmate-db/sniffy-cprocessor/out/logging.c.o"
   }
 ]

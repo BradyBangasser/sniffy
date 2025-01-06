@@ -6,7 +6,7 @@ out := $(dir)/out
 src := $(dir)/src
 lib := $(dir)/lib
 inc := $(dir)/include
-iflags := -I$(inc) -Wall
+iflags := -I$(inc) -Wall -D_POSIX_C_SOURCE=200809L -fdiagnostics-show-category=name
 
 all: src
 
@@ -15,8 +15,8 @@ src: $(inc)/global.h $(inc)/rapidjson sniffy.out
 clean:
 	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib)
 
-sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o
-	clang++ $^ -o $@ $(iflags)
+sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o $(out)/charge.cpp.o $(out)/database.c.o
+	clang++ $^ -o $@ $(iflags) -lcrypto -lmysqlclient
 
 $(out):
 	mkdir -p $@

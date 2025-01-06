@@ -2,14 +2,18 @@
 
 #define M_DEBUG
 
-#define __USE_POSIX199309
-#define _POSIX_C_SOURCE 199309L
+#define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
 #include <time.h>
 #include <memory.h>
 #include <errno.h>
 #include <inttypes.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define TIMING_CLOCK CLOCK_MONOTONIC
 
@@ -45,10 +49,10 @@ extern uint64_t unfreed_allocs;
 
 static struct timespec ts;
 
-#define ERRORF(f, ...) printf(ERROR_COLOR "[ERROR]   " f COLOR_RESET, __VA_ARGS__); ++nerrs
-#define ERROR(f) printf(ERROR_COLOR "[ERROR]   " f COLOR_RESET); ++nerrs
-#define WARNF(f, ...) printf(WARNING_COLOR "[WARNING] " f COLOR_RESET, __VA_ARGS__); ++nwarns
-#define WARN(f) printf(WARNING_COLOR "[WARNING] " f COLOR_RESET); ++nwarns
+#define ERRORF(f, ...) fprintf(stderr, ERROR_COLOR "[ERROR]   " f COLOR_RESET, __VA_ARGS__); ++nerrs
+#define ERROR(f) fprintf(stderr, ERROR_COLOR "[ERROR]   " f COLOR_RESET); ++nerrs
+#define WARNF(f, ...) fprintf(stderr, WARNING_COLOR "[WARNING] " f COLOR_RESET, __VA_ARGS__); ++nwarns
+#define WARN(f) fprintf(stderr, WARNING_COLOR "[WARNING] " f COLOR_RESET); ++nwarns
 #define INFOF(f, ...) printf(INFO_COLOR "[INFO]    " f COLOR_RESET, __VA_ARGS__)
 #define INFO(f) printf(INFO_COLOR "[INFO]    " f COLOR_RESET)
 #define SUCCESS(f) printf(SUCCESS_COLOR "[SUCCESS] " f COLOR_RESET)
@@ -109,3 +113,9 @@ static inline struct timespec stop_time() {
     ets.tv_nsec -= ts.tv_nsec;
     return ets;
 }
+
+#pragma GCC poison printf fprintf
+
+#ifdef __cplusplus
+}
+#endif

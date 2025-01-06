@@ -14,7 +14,7 @@
 
 void slisten() {
     struct sockaddr_un addr;
-    int sock, result, asock;
+    int sock, result;
     const int enable = 1;
 
     if (!access(SOCKET_PATH, F_OK)) {

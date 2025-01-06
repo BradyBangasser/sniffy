@@ -3,17 +3,19 @@
 #include "charge.hpp"
 #include "stringification.hpp"
 #include "person.hpp"
-#include "logging.h"
+#include "database.h"
 
 #include <rapidjson/document.h>
+#include <mysql/mysql.h>
 #include <vector>
+#include <numeric>
 
 class Arrest {
     private:
         // Counter for aids
         static uint64_t id_c;
-        uint8_t pid[32];
         uint64_t id;
+        uint32_t bond;
 
         Person *person;
         std::vector<std::string> notes;
@@ -25,7 +27,6 @@ class Arrest {
         Arrest();
 
         template <typename E, typename A> static bool process_json_field(Arrest &arr, std::string field, rapidjson::GenericValue<E, A> &val) {
-            DEBUGF("Handling field \"%s\"\n", field.c_str());
             if (field == "firstname") return arr.person->set_first_name(val);
             if (field == "middlename") return arr.person->set_middle_name(val);
             if (field == "lastname") return arr.person->set_last_name(val);
@@ -36,6 +37,8 @@ class Arrest {
             if (field == "height") return arr.person->set_height(val.GetString());
             if (field == "charges") {
                 arr.charges = Charge::vec_from_json(arr.id, val.GetArray());
+                auto f = [&](const uint32_t &t, const Charge &c) { return t + c.get_bond(); };
+                arr.bond = std::accumulate(arr.charges.begin(), arr.charges.end(), (uint32_t) 0, f);
                 return true;
             }
 
@@ -84,9 +87,17 @@ class Arrest {
                 process_json_field(arr, curs->name.GetString(), curs->value);
                 curs++;
             }
+
+            arr.verify();
+            arr.upsert(database::get_connection());
+
+            return arr;
         }
 
 
-        void recompute_id();
+        // ensures all required elements of the arrest exist
+        bool verify();
+        bool compute_id();
+        bool upsert(MYSQL *);
         ~Arrest();
 };

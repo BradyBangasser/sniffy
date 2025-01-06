@@ -6,7 +6,7 @@ namespace database {
     extern "C" {
 #endif
 
-bool connect();
+bool connect_db();
 MYSQL *get_connection();
 
 #ifdef __cplusplus

@@ -2,8 +2,6 @@
 
 #include <string>
 #include <ctype.h>
-#include <cinttypes>
-#include <iostream>
 #include <vector>
 #include <rapidjson/document.h>
 #include <algorithm>
@@ -13,6 +11,7 @@ class Charge {
         uint32_t bond;
         uint64_t id;
         uint64_t arrest_id;
+        static uint32_t id_c;
         std::string bond_status;
         std::string bond_type;
         std::string timestamp;
@@ -23,8 +22,9 @@ class Charge {
         std::string insert_version;
         std::string update_version;
     public:
-        inline std::string get_sid() { return statute_id; }
-        inline std::vector<std::string> get_notes() { return notes; }
+        Charge();
+        inline std::string get_sid() const { return statute_id; }
+        inline std::vector<std::string> get_notes() const { return notes; }
         template <bool C, typename A> static std::vector<Charge> vec_from_json(uint64_t aid, rapidjson::GenericArray<C, A> charges) {
             std::vector<Charge> parsed_charges;
 
@@ -71,7 +71,6 @@ class Charge {
                         double b = curs->value.GetDouble();
                         c.bond = static_cast<uint32_t>(b);
                     } else {
-                        std::cout << "NOT UINT64: " << curs->value.GetType() << " " << curs->value.IsInt() << std::endl;
                         return false;
                     }
                 }
@@ -105,4 +104,8 @@ class Charge {
             charge = c;
             return true;
         }
+
+        bool verify();
+        bool generate_id();
+        inline uint32_t get_bond() const { return bond; }
 };

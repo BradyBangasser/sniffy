@@ -1,13 +1,95 @@
 #include "person.hpp"
+#include "logging.h"
 
-Person::Person() {
+#include <openssl/evp.h>
+#include <format>
 
+Person::Person() : id{ 0 } {
+    DEBUG("Creating new NULL person\n");    
+}
+
+bool Person::generate_id() {
+    if (!verify(false)) return false;
+
+    EVP_MD_CTX *ctx;
+    const EVP_MD *md;
+    uint32_t len;
+    id_set = false;
+
+    md = EVP_get_digestbyname("SHA256");
+
+    if (md == NULL) {
+        ERROR("Failed to find digest by name\n");
+        return false;
+    }
+
+    ctx = EVP_MD_CTX_new();
+    if (ctx == NULL) {
+        ERROR("Failed to create MD context\n");
+        return false;
+    }
+
+    if (!EVP_DigestInit_ex2(ctx, md, NULL)) {
+        ERROR("Failed to initialize digest\n");
+        return false;
+    }
+
+    if (!EVP_DigestUpdate(ctx, this->first_name.c_str(), this->first_name.length())) {
+        ERROR("Failed to hash firstname\n");
+        return false;
+    }
+
+    if (!EVP_DigestUpdate(ctx, this->last_name.c_str(), this->last_name.length())) {
+        ERROR("Failed to hash lastname\n");
+        return false;
+    }
+
+    if (this->middle_name.length()) {
+        if (!EVP_DigestUpdate(ctx, this->middle_name.c_str(), this->last_name.length())) {
+            ERROR("Failed to hash middlename\n");
+            return false;
+        }
+    }
+
+    if (this->suffix && this->suffix->length() > 0) {
+        if (!EVP_DigestUpdate(ctx, this->suffix->c_str(), this->suffix->length())) {
+            ERROR("Failed to hash suffix\n");
+            return false;
+        }
+    }
+
+    if (!EVP_DigestUpdate(ctx, &this->birth_year, sizeof(int))) {
+        ERROR("Failed to hash birthyear\n");
+        return false;
+    }
+
+    if (!EVP_DigestFinal_ex(ctx, id, &len)) {
+        ERROR("Digest final failed\n");
+        return false;
+    }
+
+    id_set = true;
+    return true;
+}
+
+bool Person::verify(bool genId) {
+    if (this->first_name.length() < 1) return false;
+    if (this->last_name.length() < 1) return false;
+
+    if (genId && !id_set) generate_id();
+
+    return true;
+}
+
+std::string Person::id_to_str(uint8_t id[32]) {
+    std::string s;
+    for (uint8_t i = 0; i < 32; i++) {
+        s += std::format("{:x}", id[i]);
+    }
+    return s;
 }
 
 uint32_t Person::parse_height(const char *str) {
-    uint8_t feet;
-    uint8_t inches;
-    uint8_t total_inches;
     const char *curs;
     char nums[4] = { 0 };
     uint8_t n_i = 0;
@@ -44,4 +126,122 @@ uint32_t Person::parse_height(const char *str) {
     } else {
         return 0;
     }
+}
+
+bool Person::upsert(MYSQL *connection) {
+    this->verify();
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wwritable-strings"
+    static constexpr char *upsert_stmt = "INSERT INTO people (ID, FirstName, LastName, MiddleName, Suffix, Height, Weight, Race, Sex, BirthYear, Address, PhoneNumber) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `Height` = VALUES(`Height`), `Weight` = VALUES(`Weight`)";
+    #pragma clang diagnostic pop
+
+    uint8_t count = 0;
+
+    MYSQL_STMT *stmt;
+    MYSQL_BIND bind[12];
+
+    memset(bind, 0, sizeof(bind));
+
+    stmt = mysql_stmt_init(connection);
+    if (!stmt) {
+        ERROR("Failed to initialize SQL statment, out of memory\n");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(stmt, upsert_stmt, strlen(upsert_stmt))) {
+        ERRORF("Stmt perpare failure: %s\n", mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    count = mysql_stmt_param_count(stmt);
+
+    if (count != sizeof(bind) / sizeof(MYSQL_BIND)) {
+        ERRORF("Failed to upsert, expect %d params, got %ld\n", count, sizeof(bind) / sizeof(MYSQL_BIND));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    uint64_t id_len = 32;
+    bind[0].buffer_type = MYSQL_TYPE_BLOB;
+    bind[0].buffer = (char *) this->id;
+    bind[0].is_null = NULL;
+    bind[0].length = &id_len;
+    bind[0].buffer_length = id_len;
+
+    uint64_t fn_len = this->first_name.length();
+    bind[1].buffer_type = MYSQL_TYPE_STRING;
+    bind[1].buffer = const_cast<char *>(this->first_name.c_str());
+    bind[1].length = &fn_len;
+    bind[1].buffer_length = fn_len;
+    bind[1].is_null = NULL;
+
+    uint64_t ln_len = this->last_name.length();
+    bind[2].buffer_type = MYSQL_TYPE_STRING;
+    bind[2].buffer = const_cast<char *>(this->last_name.c_str());
+    bind[2].length = &ln_len;
+    bind[2].buffer_length = ln_len;
+    bind[2].is_null = NULL;
+
+    uint64_t mn_len = this->middle_name.length();
+    bool mn_n = this->middle_name.length() > 0;
+    bind[3].buffer_type = MYSQL_TYPE_STRING;
+    bind[3].buffer = mn_n ? const_cast<char *>(this->middle_name.c_str()) : NULL;
+    bind[3].length = &mn_len;
+    bind[3].buffer_length = mn_len;
+    bind[3].is_null = &mn_n;
+
+    bool sf_n = this->suffix && this->suffix->length() > 0;
+    uint64_t sf_len = sf_n ? this->suffix->length() : 0;
+    bind[4].buffer_type = MYSQL_TYPE_STRING;
+    bind[4].buffer = sf_n ? const_cast<char *>(this->suffix->c_str()) : NULL;
+    bind[4].length = &sf_len;
+    bind[4].buffer_length = sf_len;
+    bind[4].is_null = &sf_n;
+
+    bind[5].buffer_type = MYSQL_TYPE_TINY;
+    bind[5].buffer = &this->height;
+    bind[5].is_unsigned = true;
+    bind[5].is_null = NULL;
+
+    bind[6].buffer_type = MYSQL_TYPE_SHORT;
+    bind[6].buffer = &this->weight;
+    bind[6].is_unsigned = true;
+    bind[6].is_null = NULL;
+
+    short int r = this->race;
+    bind[7].buffer_type = MYSQL_TYPE_SHORT;
+    bind[7].buffer = &r;
+    bind[7].is_null = NULL;
+
+    bind[8].buffer_type = MYSQL_TYPE_TINY;
+    bind[8].buffer = &this->sex;
+    bind[8].is_null = NULL;
+
+    bind[9].buffer_type = MYSQL_TYPE_SHORT;
+    bind[9].buffer = &this->birth_year;
+
+    bool n = true;
+    bind[10].buffer_type = MYSQL_TYPE_STRING;
+    bind[10].is_null = &n;
+    bind[11].buffer_type = MYSQL_TYPE_STRING;
+    bind[11].is_null = &n;
+
+    if (mysql_stmt_bind_param(stmt, bind)) {
+        ERRORF("Failed to bind stmt params, error: %s\n", mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    if (mysql_stmt_execute(stmt)) {
+        ERRORF("Failed to execute stmt, error: %s\n", mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    uint64_t rows = mysql_stmt_affected_rows(stmt);
+
+    mysql_stmt_close(stmt);
+    if (rows) SUCCESSF("%s %s %s (ID: %s) into database\n", rows - 1 ? "Inserted" : "Updated", this->first_name.c_str(), this->last_name.c_str(), this->id_to_str().c_str());
+    return true;
 }
