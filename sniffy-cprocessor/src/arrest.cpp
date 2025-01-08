@@ -105,9 +105,9 @@ bool Arrest::upsert(MYSQL *connection) {
     uint64_t rows = mysql_stmt_affected_rows(stmt);
 
     mysql_stmt_close(stmt);
-    if (rows) SUCCESSF("%s Arrest %lx into database\n", rows - 1 ? "Inserted" : "Updated", id);
+    if (rows) SUCCESSF("%s Arrest %lx into database\n", rows - 1 ?  "Updated" : "Inserted", id);
 
-    std::for_each(this->charges.begin(), this->charges.end(), [](Charge c) {});
+    std::for_each(this->charges.begin(), this->charges.end(), [connection](Charge c) { c.upsert(connection); });
 
     return true;
 }

@@ -43,10 +43,11 @@ class Arrest {
             }
 
             if (field == "bookingagency") {
-                char agency[val.GetStringLength() + 1];
+                char *agency = new char[val.GetStringLength() + 1];
                 agency[val.GetStringLength()] = 0;
                 memcpy(agency, val.GetString(), val.GetStringLength());
                 arr.booking_agency = stringification::capitialize_name(agency);
+                delete[] agency;
                 return true;
             }
 
@@ -98,5 +99,7 @@ class Arrest {
         bool verify();
         bool compute_id();
         bool upsert(MYSQL *);
+        inline Person *get_person() { return person; }
+        inline uint64_t get_id() { return id; }
         ~Arrest();
 };

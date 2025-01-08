@@ -5,6 +5,7 @@
 #include <vector>
 #include <rapidjson/document.h>
 #include <algorithm>
+#include <mysql/mysql.h>
 
 class Charge {
     private:
@@ -108,4 +109,5 @@ class Charge {
         bool verify();
         bool generate_id();
         inline uint32_t get_bond() const { return bond; }
+        bool upsert(MYSQL *connection);
 };

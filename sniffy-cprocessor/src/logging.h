@@ -62,6 +62,8 @@ static struct timespec ts;
 #define DEBUG(f) printf(DEBUG_COLOR "[DEBUG]   " f COLOR_RESET)
 #define DEBUGF(f, ...) printf(DEBUG_COLOR "[DEBUG]   " f COLOR_RESET, __VA_ARGS__)
 
+#pragma clang poison exit
+
 #else
 #define DEBUG
 #define DEBUGF
@@ -114,7 +116,9 @@ static inline struct timespec stop_time() {
     return ets;
 }
 
-#pragma GCC poison printf fprintf
+#ifndef M_DEBUG
+// #pragma GCC poison printf fprintf
+#endif
 
 #ifdef __cplusplus
 }

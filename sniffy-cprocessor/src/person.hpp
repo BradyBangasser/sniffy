@@ -144,6 +144,8 @@ class Person {
             return true;
         }
 
+        inline const uint8_t *get_id() { return id; }
+
         // verify that this is in fact a valid person, will call generate_id if necessary and if genId is true
         bool verify(bool genId = true);
         bool generate_id();

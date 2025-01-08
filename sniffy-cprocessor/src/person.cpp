@@ -45,7 +45,7 @@ bool Person::generate_id() {
     }
 
     if (this->middle_name.length()) {
-        if (!EVP_DigestUpdate(ctx, this->middle_name.c_str(), this->last_name.length())) {
+        if (!EVP_DigestUpdate(ctx, this->middle_name.c_str(), this->middle_name.length())) {
             ERROR("Failed to hash middlename\n");
             return false;
         }
@@ -184,9 +184,9 @@ bool Person::upsert(MYSQL *connection) {
     bind[2].is_null = NULL;
 
     uint64_t mn_len = this->middle_name.length();
-    bool mn_n = this->middle_name.length() > 0;
+    bool mn_n = this->middle_name.length() == 0;
     bind[3].buffer_type = MYSQL_TYPE_STRING;
-    bind[3].buffer = mn_n ? const_cast<char *>(this->middle_name.c_str()) : NULL;
+    bind[3].buffer = mn_n ?  NULL : const_cast<char *>(this->middle_name.c_str());
     bind[3].length = &mn_len;
     bind[3].buffer_length = mn_len;
     bind[3].is_null = &mn_n;
