@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <mysql/mysql.h>
 
+#include "logging.h"
+#include "stringification.hpp"
+
 class Charge {
     private:
         uint32_t bond;
@@ -15,13 +18,15 @@ class Charge {
         static uint32_t id_c;
         std::string bond_status;
         std::string bond_type;
-        std::string timestamp;
         std::string statute_id;
         std::string statute;
         std::string docket_id;
+        struct tm charged_at;
         std::vector<std::string> notes;
         std::string insert_version;
         std::string update_version;
+
+        Charge(uint64_t id, uint64_t aid, uint32_t bond, std::string sid, std::string docket, std::vector<std::string> notes);
     public:
         Charge();
         inline std::string get_sid() const { return statute_id; }
@@ -59,7 +64,7 @@ class Charge {
                 }
 
                 if (field == "description") {
-                    c.statute = curs->name.GetString();
+                    c.statute = stringification::capitialize_name(curs->value.GetString());
                     continue;
                 }
 
@@ -76,7 +81,7 @@ class Charge {
                     }
                 }
 
-                if (field == "docketnumber") {
+                if (field == "docketnumber" && curs->value.GetStringLength() > 0) {
                     std::string val = std::string(curs->value.GetString());
                     std::transform(val.begin(), val.end(), val.begin(), ::toupper);
                     c.docket_id = std::string("IA-") + val;
@@ -95,6 +100,16 @@ class Charge {
                     continue;
                 }
 
+                if (field == "date") {
+                    if (strptime(curs->value.GetString(), "%Ft%T", &c.charged_at)) {
+                        c.generate_id();
+                        continue;
+                    }
+
+                    ERRORF("Failed to parse datetime '%s'\n", curs->value.GetString());
+                    continue;
+                }
+
                 if (curs->value.IsString()) {
                     if (curs->value.GetStringLength() <= 0) continue;
                     std::string key = curs->name.GetString();
@@ -108,6 +123,13 @@ class Charge {
 
         bool verify();
         bool generate_id();
-        inline uint32_t get_bond() const { return bond; }
         bool upsert(MYSQL *connection);
+        inline uint32_t get_bond() const { return bond; }
+        inline void set_bond(uint32_t bond) { this->bond = bond; }
+        inline uint64_t get_id() const { return id; }
+        inline void set_id(uint64_t id) { this->id = id; }
+        inline void set_aid(uint64_t aid) { this->arrest_id = aid; }
+        inline void add_note(std::string note) { notes.push_back(note); }
+        inline std::string get_docket_id() { return docket_id; }
+        static std::vector<Charge> fetch(uint64_t aid, MYSQL *connection);
 };

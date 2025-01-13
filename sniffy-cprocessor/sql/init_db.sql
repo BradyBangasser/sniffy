@@ -5,10 +5,10 @@ USE sniffy;
 
 CREATE TABLE people (
     ID BINARY(32) NOT NULL,
-    FirstName VARCHAR(255) NOT NULL,
-    MiddleName VARCHAR(255),
-    LastName VARCHAR(255) NOT NULL,
-    Address VARCHAR(255),
+    FirstName VARCHAR(256) NOT NULL,
+    MiddleName VARCHAR(256),
+    LastName VARCHAR(256) NOT NULL,
+    Address VARCHAR(256),
     Suffix VARCHAR(3),
     Race SMALLINT UNSIGNED NOT NULL,
     Height TINYINT UNSIGNED NOT NULL,
@@ -29,6 +29,7 @@ CREATE TABLE arrests (
     Bond INT UNSIGNED DEFAULT 0,
     InitialBond INT UNSIGNED DEFAULT 0,
     ArrestDate DATETIME NOT NULL,
+    ReleaseDate DATETIME,
     InsertedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP,
     Notes VARCHAR(4096),
@@ -43,11 +44,10 @@ CREATE TABLE charges (
     SID VARCHAR(32) NOT NULL,
     Bond INT UNSIGNED DEFAULT 0,
     DocketNumber VARCHAR(32),
+    ChargedAt DATETIME NOT NULL,
     InsertedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP,
     Notes VARCHAR(4096),
-
-    -- Notes VARCHAR(16383),
 
     PRIMARY KEY (ID),
     FOREIGN KEY (AID) REFERENCES arrests(ID) ON DELETE CASCADE
@@ -56,8 +56,8 @@ CREATE TABLE charges (
 
 CREATE TABLE statutes (
     ID varchar(32) NOT NULL, 
-    Name varchar(255) NOT NULL,
-    Description mediumtext NOT NULL,
+    Name varchar(256) NOT NULL,
+    Description VARCHAR(4096) DEFAULT NULL,
     InsertedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt DATETIME ON UPDATE CURRENT_TIMESTAMP,
     Notes VARCHAR(4096),
@@ -79,3 +79,5 @@ CREATE TABLE roster (
     FOREIGN KEY (PID) REFERENCES people(ID),
     FOREIGN KEY (AID) REFERENCES arrests(ID)
 );
+
+SOURCE sql/upsert_charge.sql

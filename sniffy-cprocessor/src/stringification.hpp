@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rapidjson/document.h>
+#include <algorithm>
 
 namespace stringification {
     template <bool C, typename A> std::string json_array_to_string(rapidjson::GenericArray<C, A> arr) {
@@ -19,4 +20,11 @@ namespace stringification {
     }
 
     char *capitialize_name(char *name);
+    std::string capitialize_name(std::string name);
+
+    static inline std::string lower_str(std::string str) {
+        std::string s = str;
+        std::transform(s.begin(), s.end(), s.begin(), [](uint8_t c) { return tolower(c); });
+        return s;
+    }
 }

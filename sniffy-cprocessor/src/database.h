@@ -7,6 +7,7 @@ namespace database {
 #endif
 
 bool connect_db();
+void disconnect_db();
 MYSQL *get_connection();
 
 #ifdef __cplusplus

@@ -1,5 +1,6 @@
 #pragma once
 
+#define _XOPEN_SOURCE
 #include <time.h>
 #include <inttypes.h>
 

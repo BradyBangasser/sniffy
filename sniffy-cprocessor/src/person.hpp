@@ -5,6 +5,7 @@
 #include <rapidjson/document.h>
 
 #include "global.h"
+#include "stringification.hpp"
 #include "sex.h"
 #include "race.h"
 
@@ -38,7 +39,7 @@ class Person {
                 return false;
             }
 
-            first_name = str;
+            first_name = stringification::capitialize_name(str);
             return true;
         }
 
@@ -52,7 +53,8 @@ class Person {
                 return false;
             }
 
-            middle_name = str;
+            middle_name = stringification::capitialize_name(str);
+;
             return true;
         }
 
@@ -66,7 +68,7 @@ class Person {
                 return false;
             }
 
-            last_name = str;
+            last_name = stringification::capitialize_name(str);;
             return true;
         }
 
@@ -80,7 +82,7 @@ class Person {
                 suffix = NULL;
             }
 
-            suffix = new std::string(str->c_str());
+            suffix = new std::string(stringification::capitialize_name(*str));
             return true;
         }
 
@@ -145,6 +147,8 @@ class Person {
         }
 
         inline const uint8_t *get_id() { return id; }
+
+        inline std::string get_name() const { return first_name + " " + last_name; }
 
         // verify that this is in fact a valid person, will call generate_id if necessary and if genId is true
         bool verify(bool genId = true);

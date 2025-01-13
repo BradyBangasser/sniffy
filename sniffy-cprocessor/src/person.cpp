@@ -1,11 +1,12 @@
 #include "person.hpp"
+#include "stringification.hpp"
 #include "logging.h"
 
 #include <openssl/evp.h>
 #include <format>
+#include <numeric>
 
 Person::Person() : id{ 0 } {
-    DEBUG("Creating new NULL person\n");    
 }
 
 bool Person::generate_id() {
@@ -31,42 +32,55 @@ bool Person::generate_id() {
 
     if (!EVP_DigestInit_ex2(ctx, md, NULL)) {
         ERROR("Failed to initialize digest\n");
+        EVP_MD_CTX_free(ctx);
         return false;
     }
 
-    if (!EVP_DigestUpdate(ctx, this->first_name.c_str(), this->first_name.length())) {
+    std::string lfn = stringification::lower_str(this->first_name);
+    if (!EVP_DigestUpdate(ctx, lfn.c_str(), lfn.length())) {
         ERROR("Failed to hash firstname\n");
+        EVP_MD_CTX_free(ctx);
         return false;
     }
 
-    if (!EVP_DigestUpdate(ctx, this->last_name.c_str(), this->last_name.length())) {
+    std::string lln = stringification::lower_str(this->last_name);
+    if (!EVP_DigestUpdate(ctx, lln.c_str(), lln.length())) {
         ERROR("Failed to hash lastname\n");
+        EVP_MD_CTX_free(ctx);
         return false;
     }
 
     if (this->middle_name.length()) {
-        if (!EVP_DigestUpdate(ctx, this->middle_name.c_str(), this->middle_name.length())) {
+        std::string lmn = stringification::lower_str(this->middle_name);
+        if (!EVP_DigestUpdate(ctx, lmn.c_str(), lmn.length())) {
             ERROR("Failed to hash middlename\n");
+            EVP_MD_CTX_free(ctx);
             return false;
         }
     }
 
     if (this->suffix && this->suffix->length() > 0) {
-        if (!EVP_DigestUpdate(ctx, this->suffix->c_str(), this->suffix->length())) {
+        std::string ls = stringification::lower_str(*this->suffix);
+        if (!EVP_DigestUpdate(ctx, ls.c_str(), ls.length())) {
             ERROR("Failed to hash suffix\n");
+            EVP_MD_CTX_free(ctx);
             return false;
         }
     }
 
     if (!EVP_DigestUpdate(ctx, &this->birth_year, sizeof(int))) {
         ERROR("Failed to hash birthyear\n");
+        EVP_MD_CTX_free(ctx);
         return false;
     }
 
     if (!EVP_DigestFinal_ex(ctx, id, &len)) {
         ERROR("Digest final failed\n");
+        EVP_MD_CTX_free(ctx);
         return false;
     }
+
+    EVP_MD_CTX_free(ctx);
 
     id_set = true;
     return true;
@@ -84,7 +98,7 @@ bool Person::verify(bool genId) {
 std::string Person::id_to_str(uint8_t id[32]) {
     std::string s;
     for (uint8_t i = 0; i < 32; i++) {
-        s += std::format("{:x}", id[i]);
+        s += std::format("{:02x}", id[i]);
     }
     return s;
 }
@@ -132,13 +146,13 @@ bool Person::upsert(MYSQL *connection) {
     this->verify();
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wwritable-strings"
-    static constexpr char *upsert_stmt = "INSERT INTO people (ID, FirstName, LastName, MiddleName, Suffix, Height, Weight, Race, Sex, BirthYear, Address, PhoneNumber) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `Height` = VALUES(`Height`), `Weight` = VALUES(`Weight`)";
+    static constexpr char *upsert_stmt = "INSERT INTO people (ID, FirstName, LastName, MiddleName, Suffix, Height, Weight, Race, Sex, BirthYear, Address, PhoneNumber, Notes) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `Height` = VALUES(`Height`), `Weight` = VALUES(`Weight`)";
     #pragma clang diagnostic pop
 
     uint8_t count = 0;
 
     MYSQL_STMT *stmt;
-    MYSQL_BIND bind[12];
+    MYSQL_BIND bind[13];
 
     memset(bind, 0, sizeof(bind));
 
@@ -191,10 +205,10 @@ bool Person::upsert(MYSQL *connection) {
     bind[3].buffer_length = mn_len;
     bind[3].is_null = &mn_n;
 
-    bool sf_n = this->suffix && this->suffix->length() > 0;
-    uint64_t sf_len = sf_n ? this->suffix->length() : 0;
+    bool sf_n = !this->suffix || this->suffix->length() == 0;
+    uint64_t sf_len = sf_n ? 0 : this->suffix->length();
     bind[4].buffer_type = MYSQL_TYPE_STRING;
-    bind[4].buffer = sf_n ? const_cast<char *>(this->suffix->c_str()) : NULL;
+    bind[4].buffer = sf_n ? NULL : const_cast<char *>(this->suffix->c_str());
     bind[4].length = &sf_len;
     bind[4].buffer_length = sf_len;
     bind[4].is_null = &sf_n;
@@ -227,6 +241,13 @@ bool Person::upsert(MYSQL *connection) {
     bind[11].buffer_type = MYSQL_TYPE_STRING;
     bind[11].is_null = &n;
 
+    std::string note_buf = std::reduce(this->notes.begin(), this->notes.end(), std::string(), [](std::string &a, std::string &b) { return a + "\n" + b; });
+    uint64_t note_len = note_buf.length();
+    bind[12].buffer_type = MYSQL_TYPE_STRING;
+    bind[12].buffer = const_cast<char *>(note_buf.c_str()) + 1;
+    bind[12].buffer_length = note_len;
+    bind[12].length = &note_len;
+
     if (mysql_stmt_bind_param(stmt, bind)) {
         ERRORF("Failed to bind stmt params, error: %s\n", mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
@@ -242,6 +263,6 @@ bool Person::upsert(MYSQL *connection) {
     uint64_t rows = mysql_stmt_affected_rows(stmt);
 
     mysql_stmt_close(stmt);
-    if (rows) SUCCESSF("%s %s %s (ID: %s) into database\n", rows - 1 ? "Inserted" : "Updated", this->first_name.c_str(), this->last_name.c_str(), this->id_to_str().c_str());
+    if (rows) SUCCESSF("%s %s %s (ID: %s) into database\n", rows - 1 ? "Updated" : "Inserted", this->first_name.c_str(), this->last_name.c_str(), this->id_to_str().c_str());
     return true;
 }

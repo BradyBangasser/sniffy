@@ -4,6 +4,7 @@
 #include "arrest.hpp"
 #include "roster.h"
 #include "logging.h"
+#include "database.h"
 #include "processor.hpp"
 
 #pragma clang diagnostic push
@@ -53,14 +54,47 @@ void Processor::process_json_string(rapidjson::StringStream str) {
         struct RosterEntry *ent = roster_remove(roster, a.get_person()->get_id());
 
         if (ent != NULL) {
-            DEBUG("Inmate found in roster\n");
+            bool change = false;
+            Arrest *ex_arr = Arrest::fetch(ent->aid, database::get_connection());
+            a.set_id(ex_arr->get_id());
+            std::vector<Charge> &roster_charges = a.get_charges();
+            std::vector<Charge> &existing_charges = ex_arr->get_charges(); // becomes removed charges
+            std::vector<Charge> new_charge_vec;
+            
+            for (Charge &roster_charge : roster_charges) {
+                std::vector<Charge>::iterator iter;
+                for (iter = existing_charges.begin(); iter != existing_charges.end(); iter++) {
+                    if ((iter->get_id() >> 37) == (roster_charge.get_id() >> 37)) {
+                        roster_charge.set_id(iter->get_id());
+                        if (roster_charge.get_bond() != iter->get_bond()) {
+                            change = true;
+                        }
+
+                        break;
+                    }
+                }
+
+                if (iter == existing_charges.end()) {
+                    change = true;
+                    roster_charge.add_note("Filed after initial charges");
+                } else {
+                    existing_charges.erase(iter, iter + 1);
+                }
+
+                new_charge_vec.push_back(roster_charge);
+            }
+
+            if (change) {
+                ex_arr->swap_charges(new_charge_vec);
+                ex_arr->upsert(database::get_connection());
+                updated++;
+            }
 
             roster_free_entry(ent);
-
         } else {
-            DEBUG("Person not found in roster\n");
-            inserted++;
-            a.upsert(database::get_connection());
+            if (!a.upsert(database::get_connection())) {
+                ERROR("Failed to upsert data\n");
+            }
 
             memset(bind, 0, sizeof(bind));
 
@@ -80,7 +114,6 @@ void Processor::process_json_string(rapidjson::StringStream str) {
                 return;
             }
 
-            WARN("INSERTING\n");
             if (mysql_stmt_execute(stmt)) {
                 ERRORF("Failed to execute stmt, error: %s\n", mysql_stmt_error(stmt));
                 roster_free(roster);
@@ -88,6 +121,7 @@ void Processor::process_json_string(rapidjson::StringStream str) {
                 return;
             }
 
+            inserted++;
         }
 
         total_processed++;

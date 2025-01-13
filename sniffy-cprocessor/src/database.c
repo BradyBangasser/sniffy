@@ -26,4 +26,11 @@ bool connect_db() {
     return true;
 }
 
+void disconnect_db() {
+    if (not_connected) return;
+
+    mysql_close(&conn);
+    not_connected = true;
+}
+
 MYSQL *get_connection() { return not_connected ? NULL : &conn; }
