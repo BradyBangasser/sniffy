@@ -1,0 +1,30 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-c",
+      "-I/usr/include/lua5.4.7",
+      "-std=c23",
+      "-o",
+      "target/lib/modules/lua_loader.c.o",
+      "modules/lua_loader.c"
+    ],
+    "directory": "/home/bardy/Documents/code/sniffy/preprocessor",
+    "file": "/home/bardy/Documents/code/sniffy/preprocessor/modules/lua_loader.c",
+    "output": "/home/bardy/Documents/code/sniffy/preprocessor/target/lib/modules/lua_loader.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-I/usr/include/lua5.4.7",
+      "-std=c++23",
+      "-o",
+      "target/lib/modules/module_loader.cpp.o",
+      "modules/module_loader.cpp"
+    ],
+    "directory": "/home/bardy/Documents/code/sniffy/preprocessor",
+    "file": "/home/bardy/Documents/code/sniffy/preprocessor/modules/module_loader.cpp",
+    "output": "/home/bardy/Documents/code/sniffy/preprocessor/target/lib/modules/module_loader.cpp.o"
+  }
+]
