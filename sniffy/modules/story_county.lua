@@ -1,3 +1,11 @@
+META_DATA = {
+    facility_name = "Story County Justice Center",
+    facility_address = "1315 S B Ave, Nevada, IA 50201",
+    facility_cap = 104,
+    start_time = 2,
+    run_interval = 30,
+}
+
 function FETCH ()
     local http = require('socket.http')
     local request = require("http.request")
@@ -30,14 +38,6 @@ function FETCH ()
         print("X-Xsrf-Token is null")
         return ""
     end
-
-    -- header_dict = {
-    --     "Sec-Fetch-Mode": "cors",
-    --     "Sec-Fetch-Dest": "empty",
-    --     "Referrer": "https://centraliowa.policetocitizen.com/Inmates/Catalog",
-    --     "Priority": "u=1, i",
-    --     "Content-Type": "application/json"
-    -- }
 
     req = request.new_from_uri("https://centraliowa.policetocitizen.com/api/Inmates/241")
     req.headers:append("X-Xsrf-Token", xsrft)
