@@ -1,6 +1,7 @@
 api/routes/build.go
 preprocessor/target
 preprocessor/.cache
+preprocessor/compile_commands.json
 processor/lib
 processor/include
 processor/out
