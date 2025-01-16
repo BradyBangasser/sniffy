@@ -1,9 +1,9 @@
 api/routes/build.go
-sniffy/target
-sniffy/.cache
-sniffy-cprocessor/lib
-sniffy-cprocessor/include
-sniffy-cprocessor/out
-sniffy-cprocessor/.cache
-sniffy-cprocessor/compile_commands.json
+preprocessor/target
+preprocessor/.cache
+processor/lib
+processor/include
+processor/out
+processor/.cache
+processor/compile_commands.json
 *.out
