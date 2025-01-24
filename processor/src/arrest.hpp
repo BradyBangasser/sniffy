@@ -3,6 +3,7 @@
 #include "charge.hpp"
 #include "stringification.hpp"
 #include "person.hpp"
+#include "processor.hpp"
 
 #include <rapidjson/document.h>
 #include <mysql/mysql.h>
@@ -16,6 +17,8 @@ class Arrest {
         uint64_t id;
         uint32_t bond;
         uint32_t initial_bond;
+        uint32_t fac_id;
+        char state_code[3] = {0};
 
         Person *person;
         uint8_t *pid;
@@ -41,7 +44,7 @@ class Arrest {
             if (field == "primarycharge" || field == "primarychargedescription") return true; 
             if (field == "height") return arr.person->set_height(val.GetString());
             if (field == "charges") {
-                arr.charges = Charge::vec_from_json(arr.id, val.GetArray());
+                arr.charges = Charge::vec_from_json(arr.id, arr.state_code, val.GetArray());
                 auto f = [&](const uint32_t &t, const Charge &c) { return t + c.get_bond(); };
                 arr.bond = std::accumulate(arr.charges.begin(), arr.charges.end(), (uint32_t) 0, f);
                 return true;
@@ -93,9 +96,12 @@ class Arrest {
             return true;
         }
     public:
-        template <bool C, typename T> static Arrest from_json(rapidjson::GenericObject<C, T> obj) {
+        template <bool C, typename T> static Arrest from_json(struct FacilityData &d, rapidjson::GenericObject<C, T> obj) {
             Arrest arr;
             rapidjson::GenericMemberIterator curs = obj.MemberBegin();
+
+            arr.fac_id = d.id;
+            memcpy(arr.state_code, d.state_code, 2);
 
             while (curs != obj.MemberEnd()) {
                 process_json_field(arr, curs->name.GetString(), curs->value);

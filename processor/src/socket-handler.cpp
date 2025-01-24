@@ -1,49 +1,68 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <string>
-#include "processor.hpp"
+#include <poll.h>
 
+#include "socket-handler.h"
+#include "processor.hpp"
 #include "logging.h"
+#include "status.h"
 
 extern "C" void *socket_handler(void *fdp) {
     if (fdp == NULL) {
         return NULL;
     }
 
-    int32_t initial_size;
-    ssize_t res;
+    struct RosterData d;
+    struct pollfd ps;
     uint8_t *buffer;
-    int fd = *((int *) fdp);
+    uint8_t ack = 0x06;
+    int fd = *((int *) fdp), p;
     std::string json;
 
-    DEBUGF("Attempting to receive data from socket %d\n", fd);
-    res = recv(fd, &initial_size, sizeof(initial_size), 0);
+    ps.fd = fd;
+    ps.events |= POLLHUP;
+    ps.revents |= POLLHUP;
 
-    if (res == -1) {
-        ERRORF("Failed to receive data from socket, errno: %d\n", errno);
-        return NULL;
+    while ((p = poll(&ps, 1, 10)) != -1 && !(ps.revents & POLLHUP)) {
+        Status *status = status_state_create(100, INITIALIZING);
+        memset(&d, 0, sizeof(struct RosterData));
+
+        if (recv(fd, (char *) &d, sizeof(struct RosterData), 0) < 0) {
+            ERRORF("Error receiving data from socket (fd: %d), errno: %d\n", fd, errno);
+            return NULL;
+        }
+
+        if ((d.state_code[0] - 0x41) > 0x5A || (d.state_code[1] - 0x41) > 0x5A) { 
+            ERRORF("'%x%x' is an invalid state code\n", d.state_code[0], d.state_code[1]);
+            return NULL;
+        }
+
+        if (d.data_len < 1) {
+            WARNF("Received no data from Facility %c%c-%X\n", d.state_code[0], d.state_code[1], d.facId);
+            return NULL;
+        }
+
+        DEBUGF("Facility %c%c-%X Data-len: %u\n", d.state_code[0], d.state_code[1], d.facId, d.data_len);
+
+        send(fd, &ack, 1, 0);
+
+        buffer = (uint8_t *) malloc(d.data_len);
+
+        if (buffer == NULL) {
+            ERROR("Failed to allocate memory for socket messages\n");
+            return NULL;
+        }
+
+        if (recv(fd, (char *) buffer, d.data_len, 0) < d.data_len) {
+            ERRORF("Error receiving data from socket (fd: %d), errno: %d\n", fd, errno);
+            return NULL;
+        }
+
+        Processor::process_json_string(&d, (char *) buffer, status);
+
+        free(buffer);
     }
 
-    initial_size += 4;
-
-    buffer = (uint8_t *) malloc(sizeof(uint8_t) * (initial_size + 1));
-    if (buffer == NULL) {
-        ERRORF("Failed to allocate memory, errno: %d\n", errno);
-        return NULL;
-    }
-
-    memset(buffer, 0, initial_size + 1);
-
-    res = recv(fd, buffer, (initial_size + 1), 0);
-    
-    if (res == -1) {
-        ERRORF("Failed to receive data from socket, errno: %d\n", errno);
-        return NULL;
-    }
-
-    json = (char *) buffer + 4;
-    Processor::process_json_string((char *) buffer + 4);
-
-    free(buffer);
     return NULL;
 }

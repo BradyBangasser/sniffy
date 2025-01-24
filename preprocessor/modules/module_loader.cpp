@@ -9,8 +9,10 @@
 
 const char *ignored_files[] = { "README.md", "module_loader.cpp", "module_loader.h", "lua_loader.c" };
 
-typedef std::function<std::remove_pointer_t<RawLoadFunction>> ModuleCall;
+// typedef std::function<std::remove_pointer_t<RawLoadFunction>> ModuleCall;
+typedef std::function<uint8_t(const char *, Module *, ModuleOut *)> ModuleCall;
 
+// TODO Switch this is a hashmap or tree
 Module modules[MAX_MODULES] = {};
 ModuleCall cmodules[MAX_MODULES] = {0};
 ModuleMeta mdata[MAX_MODULES] = {0};
@@ -25,7 +27,7 @@ extern "C" Module *load_modules(uint16_t *n) {
     DIR *d;
     int i;
     struct dirent *dir;
-    chdir("modules");
+    chdir("/home/bardy/Documents/code/sniffy/preprocessor/modules");
     d = opendir(".");
 
     if (d != NULL) {
@@ -57,12 +59,17 @@ extern "C" Module *load_modules(uint16_t *n) {
 
             if (fetch_module_meta(modules + n_mods, mdata + n_mods)) {
                 printf("Error fetching metadata for module '%s'\n", modules[n_mods].module_path);
+                continue;
             }
 
-            cmodules[n_mods] = std::bind_front(_execute_lua_module);
+            cmodules[n_mods] = std::bind_front(_execute_lua_module, "FETCH");
             modules[n_mods].id = n_mods;
 
             printf("Registering module SM-%08X (%s)\n", n_mods, mdata[n_mods].facility_name);
+
+            if (mdata[n_mods].is_incremental) {
+                cmodules[++n_mods] = std::bind_front(_execute_lua_module, "FETCH_INCREMENTAL");
+            }
 
             n_mods++;
         }
@@ -85,7 +92,17 @@ extern "C" uint8_t exec_module(uint16_t mid, ModuleOut *out) {
         return 1;
     }
 
-    uint8_t res = cmodules[mid](&modules[mid], out);
+    uint8_t res = cmodules[mid](NULL, &modules[mid], out);
+
+    return -1;
+}
+
+extern "C" uint8_t exec_module_inc(const char *id, uint16_t mid, ModuleOut *out) {
+    if (cmodules[mid] == NULL || modules[mid].module_path[0] == 0x0) {
+        return 1;
+    }
+
+    uint8_t res = cmodules[mid + 1](id, &modules[mid], out);
 
     return -1;
 }

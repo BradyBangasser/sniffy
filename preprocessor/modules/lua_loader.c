@@ -6,7 +6,7 @@
 
 #include "_loader.h"
 
-uint8_t _execute_module(const Module *module, ModuleOut *o_mod) {
+uint8_t _execute_module(const char *fn_name, const char *arg, const Module *module, ModuleOut *o_mod) {
     lua_State *ls = luaL_newstate();
     luaL_openlibs(ls);
     luaopen_base(ls);
@@ -20,9 +20,13 @@ uint8_t _execute_module(const Module *module, ModuleOut *o_mod) {
         return 1;
     }
 
-    lua_getglobal(ls, "FETCH");
+    lua_getglobal(ls, fn_name);
 
-    if (lua_pcall(ls, 0, 1, 0)) {
+    if (arg != NULL) {
+        lua_pushstring(ls, arg);
+    }
+
+    if (lua_pcall(ls, arg != NULL, 1, 0)) {
         printf("Failed to fetch: %s\n", lua_tostring(ls, -1));
         lua_close(ls);
         return -1;
@@ -47,11 +51,15 @@ uint8_t _lua_fetch_meta(const Module *module, ModuleMeta *data) {
     luaopen_string(ls);
     luaopen_package(ls);
 
+    memset((char *) data->state_code, 0, 3);
+
     if (luaL_loadfile(ls, (char *) module->module_path) || lua_pcall(ls, 0, 0, 0)) {
         printf("ERROR: %s\n", lua_tostring(ls, -1));
         lua_close(ls);
         return 1;
     }
+
+    data->is_incremental = lua_getglobal(ls, "FETCH_INCREMENTAL") != LUA_TNIL;
 
     if (lua_getglobal(ls, "META_DATA") != LUA_TTABLE) {
         printf("In module %s, META_DATA is wrong type or not defined\n", module->module_path);
@@ -90,5 +98,40 @@ uint8_t _lua_fetch_meta(const Module *module, ModuleMeta *data) {
     data->facility_cap = lua_tonumber(ls, -1);
 
     lua_pop(ls, 1);
+
+    if (lua_getfield(ls, -1, "state_code") != LUA_TSTRING) {
+        printf("In module %s, state_code is wrong type or not defined\n", module->module_path);
+        lua_close(ls);
+        return 2;
+    }
+
+    const char *state_code = lua_tostring(ls, -1);
+    memcpy((char *) data->state_code, state_code, 2);
+
+    lua_pop(ls, 1);
+
+    if (lua_getfield(ls, -1, "run_interval") != LUA_TNUMBER) {
+        printf("In module %s, facility_cap is wrong type or not defined\n", module->module_path);
+        lua_close(ls);
+        return 2;
+    }
+
+    data->run_interval = lua_tonumber(ls, -1);
+
+    lua_pop(ls, 1);
+
+    if (lua_getfield(ls, -1, "start_time") != LUA_TNUMBER) {
+        printf("In module %s, facility_cap is wrong type or not defined\n", module->module_path);
+        lua_close(ls);
+        return 2;
+    }
+
+    data->start_time = lua_tonumber(ls, -1);
+
+    lua_pop(ls, 1);
+
+    lua_close(ls);
+
+    data->type = MT_LUA;
     return 0;
 }

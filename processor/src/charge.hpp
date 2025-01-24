@@ -31,14 +31,14 @@ class Charge {
         Charge();
         inline std::string get_sid() const { return statute_id; }
         inline std::vector<std::string> get_notes() const { return notes; }
-        template <bool C, typename A> static std::vector<Charge> vec_from_json(uint64_t aid, rapidjson::GenericArray<C, A> charges) {
+        template <bool C, typename A> static std::vector<Charge> vec_from_json(uint64_t aid, const char state_code[3], rapidjson::GenericArray<C, A> charges) {
             std::vector<Charge> parsed_charges;
 
             rapidjson::Value::ConstValueIterator curs = charges.Begin();
 
             while (curs != charges.End()) {
                 Charge c;
-                if (from_json(c, aid, curs->GetObject())) {
+                if (from_json(c, aid, std::string(state_code), curs->GetObject())) {
                     parsed_charges.push_back(c);
                 }
                 curs++;
@@ -47,7 +47,7 @@ class Charge {
             return parsed_charges;
         }
 
-        template <bool C, typename A> static bool from_json(Charge &charge, uint64_t aid, rapidjson::GenericObject<C, A> json) {
+        template <bool C, typename A> static bool from_json(Charge &charge, uint64_t aid, std::string state_code, rapidjson::GenericObject<C, A> json) {
             rapidjson::GenericMemberIterator curs = json.MemberBegin();
 
             Charge c;
@@ -59,7 +59,7 @@ class Charge {
                 if (field == "name") {
                     std::string val = std::string(curs->value.GetString());
                     std::transform(val.begin(), val.end(), val.begin(), ::toupper);
-                    c.statute_id = std::string("IA-") + val;
+                    c.statute_id = state_code + '-' + val;
                     continue;
                 }
 
@@ -84,7 +84,7 @@ class Charge {
                 if (field == "docketnumber" && curs->value.GetStringLength() > 0) {
                     std::string val = std::string(curs->value.GetString());
                     std::transform(val.begin(), val.end(), val.begin(), ::toupper);
-                    c.docket_id = std::string("IA-") + val;
+                    c.docket_id = state_code + '-' + val;
                     continue;
                 }
 

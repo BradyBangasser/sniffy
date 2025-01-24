@@ -87,6 +87,8 @@ bool Charge::upsert(MYSQL *connection) {
         return false;
     }
 
+    DEBUGF("%lu\n", this->arrest_id);
+
     bind[0].buffer_type = MYSQL_TYPE_LONGLONG;
     bind[0].buffer = (char *) &this->id;
     bind[0].is_null = NULL;
@@ -153,7 +155,7 @@ bool Charge::upsert(MYSQL *connection) {
     }
 
     if (mysql_stmt_execute(stmt)) {
-        ERRORF("Failed to execute stmt, error: %s\n", mysql_stmt_error(stmt));
+        ERRORF("Failed to insert charge, error: %s\n", mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
         return false;
     }

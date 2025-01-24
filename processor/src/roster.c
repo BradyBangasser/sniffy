@@ -121,7 +121,7 @@ struct RosterEntry *roster_remove(struct Roster *roster, const uint8_t pid[32]) 
     return NULL;
 }
 
-struct Roster *fetch_roster(MYSQL *connection) {
+struct Roster *fetch_roster(MYSQL *connection, uint32_t fac_id) {
     MYSQL_STMT *stmt;
     MYSQL_BIND bind[2];
     uint8_t id[32] = { 0xCC };
@@ -135,7 +135,7 @@ struct Roster *fetch_roster(MYSQL *connection) {
         return NULL;
     }
 
-    static const char *query = "SELECT PID, AID FROM roster";
+    static const char *query = "SELECT PID, AID FROM roster WHERE FID=?";
 
     memset(bind, 0, sizeof(bind));
 
@@ -145,8 +145,19 @@ struct Roster *fetch_roster(MYSQL *connection) {
         return NULL;
     }
 
+    bind[0].buffer_type = MYSQL_TYPE_LONG;
+    bind[0].buffer = &fac_id;
+    bind[0].is_unsigned = true;
+
     if (mysql_stmt_prepare(stmt, query, strlen(query))) {
         ERRORF("Failed to prepare roster stmt, error: %s\n", mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        roster_free(roster_map);
+        return NULL;
+    }
+
+    if (mysql_stmt_bind_param(stmt, bind)) {
+        ERRORF("Failed to bind fac_id %X to query, error %s\n", fac_id, mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
         roster_free(roster_map);
         return NULL;
@@ -159,13 +170,7 @@ struct Roster *fetch_roster(MYSQL *connection) {
 
     bind[1].buffer_type = MYSQL_TYPE_LONGLONG;
     bind[1].buffer = &aid;
-
-    if (mysql_stmt_bind_result(stmt, bind)) {
-        ERRORF("Failed to bind results, error: %s\n", mysql_stmt_error(stmt));
-        mysql_stmt_close(stmt);
-        roster_free(roster_map);
-        return NULL;
-    }
+    bind[1].is_unsigned = true;
 
     if (mysql_stmt_execute(stmt)) {
         ERRORF("Failed to execute roster query, error: %s\n", mysql_stmt_error(stmt));
@@ -174,6 +179,13 @@ struct Roster *fetch_roster(MYSQL *connection) {
         return NULL;
     }
     
+    if (mysql_stmt_bind_result(stmt, bind)) {
+        ERRORF("Failed to bind results, error: %s\n", mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        roster_free(roster_map);
+        return NULL;
+    }
+
     while ((res = mysql_stmt_fetch(stmt)) == 0) {
         roster_insert(roster_map, roster_create_entry(id, aid));
     }

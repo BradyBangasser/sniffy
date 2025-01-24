@@ -2,8 +2,9 @@ META_DATA = {
     facility_name = "Story County Justice Center",
     facility_address = "1315 S B Ave, Nevada, IA 50201",
     facility_cap = 104,
-    start_time = 2,
+    start_time = 10,
     run_interval = 30,
+    state_code = "IA",
 }
 
 function FETCH ()

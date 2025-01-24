@@ -1,5 +1,6 @@
 #include <rapidjson/writer.h>
 #include <mysql/mysql.h>
+#include <stdlib.h>
 
 #include "arrest.hpp"
 #include "roster.h"
@@ -9,23 +10,38 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wwritable-strings"
-static constexpr char insert_stmt[] = "INSERT INTO roster (PID, AID) VALUES (?, ?)";
-static constexpr char delete_stmt[] = "DELETE FROM roster WHERE PID=?";
+static constexpr char insert_stmt[] = "INSERT INTO roster (PID, AID, FID) VALUES (?, ?, ?)";
+static constexpr char delete_stmt[] = "DELETE FROM roster WHERE PID=? AND FID=?";
 #pragma clang diagnostic pop
 
-void Processor::process_json_string(const char *str) {
-    Processor::process_json_string(rapidjson::StringStream(str));
+FacilityData::FacilityData(const struct RosterData *d) : state_code{0} {
+    memcpy((void *) this->state_code, d->state_code, 2);
+    this->id = d->facId;
 }
 
-void Processor::process_json_string(rapidjson::StringStream str) {
+void Processor::process_json_string(const struct RosterData *d, const char *str, Status *status) {
+    Processor::process_json_string(d, rapidjson::StringStream(str), status);
+}
+
+void Processor::process_json_string(const struct RosterData *d, rapidjson::StringStream str, Status *status) {
+    if (status != NULL) {
+        status->state = INITIALIZING;
+        update_state();
+    }
+
     uint32_t total_processed = 0, inserted = 0, updated = 0, deleted = 0, i;
     static uint64_t id_len = 32;
     MYSQL_STMT *stmt;
-    MYSQL_BIND bind[2];
+    MYSQL_BIND bind[3];
+    FacilityData facdat(d);
 
     rapidjson::Document doc;
 
-    struct Roster *roster = fetch_roster(database::get_connection());
+    struct Roster *roster = fetch_roster(database::get_connection(), facdat.id);
+    if (roster == NULL) {
+        ERROR("Failed to fetch roster\n");
+        return;
+    }
 
     stmt = mysql_stmt_init(database::get_connection());
     if (stmt == NULL) {
@@ -48,12 +64,27 @@ void Processor::process_json_string(rapidjson::StringStream str) {
 
     rapidjson::GenericArray inmates = doc.IsObject() ? doc.GetObject().FindMember("inmates")->value.GetArray() : doc.GetArray();
 
+    if (doc.IsObject()) {
+
+    }
+
     for (auto &inmate : inmates) {
-        Arrest a = Arrest::from_json(inmate.GetObject());
+        if (status != NULL) {
+            status->state = PROCESSING;
+            status->current++;
+            update_state();
+        }
+
+        Arrest a = Arrest::from_json(facdat, inmate.GetObject());
 
         struct RosterEntry *ent = roster_remove(roster, a.get_person()->get_id());
 
         if (ent != NULL) {
+            if (status != NULL) {
+                status->state = CACHE_HIT;
+                update_state();
+            }
+
             bool change = false;
             Arrest *ex_arr = Arrest::fetch(ent->aid, database::get_connection());
             a.set_id(ex_arr->get_id());
@@ -85,6 +116,11 @@ void Processor::process_json_string(rapidjson::StringStream str) {
             }
 
             if (change) {
+                if (status != NULL) {
+                    status->state = UPDATING_DATABASE;
+                    update_state();
+                }
+
                 ex_arr->swap_charges(new_charge_vec);
                 ex_arr->upsert(database::get_connection());
                 updated++;
@@ -92,6 +128,11 @@ void Processor::process_json_string(rapidjson::StringStream str) {
 
             roster_free_entry(ent);
         } else {
+            if (status != NULL) {
+                status->state = INSERTING_INTO_DATABASE;
+                update_state();
+            }
+
             if (!a.upsert(database::get_connection())) {
                 ERROR("Failed to upsert data\n");
             }
@@ -106,6 +147,11 @@ void Processor::process_json_string(rapidjson::StringStream str) {
             uint64_t aid = a.get_id();
             bind[1].buffer_type = MYSQL_TYPE_LONGLONG;
             bind[1].buffer = &aid;
+            bind[1].is_unsigned = true;
+
+            bind[2].buffer_type = MYSQL_TYPE_LONG;
+            bind[2].buffer = &facdat.id;
+            bind[2].is_unsigned = true;
 
             if (mysql_stmt_bind_param(stmt, bind)) {
                 ERRORF("Failed to bind stmt, error: %s\n", mysql_stmt_error(stmt));
@@ -139,6 +185,10 @@ void Processor::process_json_string(rapidjson::StringStream str) {
     bind[0].buffer_length = id_len;
     bind[0].length = &id_len;
 
+    bind[1].buffer_type = MYSQL_TYPE_LONG;
+    bind[1].buffer = &facdat.id;
+    bind[1].is_unsigned = true;
+
     for (i = 0; i < roster->size; i++) {
         if ((uint64_t) roster->pool[i] > 1) {
             bind[0].buffer = const_cast<uint8_t *>(roster->pool[i]->pid);
@@ -163,6 +213,11 @@ void Processor::process_json_string(rapidjson::StringStream str) {
     mysql_stmt_close(stmt);
 
     roster_free(roster);
+
+    if (status != NULL) {
+        status->expected = total_processed;
+        update_state();
+    }
 
     SUCCESSF("Successfully processed %d inmates, %d were inserted into the roster, %d were removed, and %d were updated\n", total_processed, inserted, deleted, updated);
 }

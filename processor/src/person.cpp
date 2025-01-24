@@ -16,6 +16,7 @@ bool Person::generate_id() {
     const EVP_MD *md;
     uint32_t len;
     id_set = false;
+    memset(id, 0, sizeof(id));
 
     md = EVP_get_digestbyname("SHA256");
 
@@ -68,7 +69,7 @@ bool Person::generate_id() {
         }
     }
 
-    if (!EVP_DigestUpdate(ctx, &this->birth_year, sizeof(int))) {
+    if (!EVP_DigestUpdate(ctx, &this->birth_year, sizeof(uint16_t))) {
         ERROR("Failed to hash birthyear\n");
         EVP_MD_CTX_free(ctx);
         return false;

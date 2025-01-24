@@ -43,7 +43,7 @@ struct RosterEntry *roster_remove(struct Roster *roster, const uint8_t pid[32]);
 struct Roster *roster_create();
 void roster_free(struct Roster *roster);
 
-struct Roster *fetch_roster(MYSQL *connection);
+struct Roster *fetch_roster(MYSQL *connection, uint32_t fac_id);
 
 #ifdef __cplusplus
 }

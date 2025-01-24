@@ -1,4 +1,5 @@
 #include "race.h"
+#include "logging.h"
 
 #include <string.h>
 
@@ -15,6 +16,8 @@ enum race str_to_race(const char * const str) {
         if (!strcmp(str, BLACK[i])) return SR_BLACK;
         i++;
     }
+    
+    WARNF("'%s' didn't match any races\n", str);
 
     return SR_UNKNOWN;
 }

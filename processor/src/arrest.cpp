@@ -16,17 +16,13 @@ bool Arrest::verify() {
 }
 
 bool Arrest::generate_id() {
-    time_t t = time(NULL);
-    struct tm *tm = NULL;
+    struct tm *tm = &arrested_at;
+    id = 0;
     uint64_t buf;
 
-    if (t < 0) {
-        ERRORF("Failed to get time, errno: %d\n", errno);
-        return false;
+    if (arrested_at.tm_year == 1) {
+       return false;
     }
-
-    id = 0;
-    tm = gmtime(&t);
 
     if (!tm) {
         ERROR("Failed to get datetime\n");
@@ -55,12 +51,12 @@ bool Arrest::generate_id() {
 bool Arrest::upsert(MYSQL *connection) {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wwritable-strings"
-    static constexpr char *upsert_stmt = "INSERT INTO arrests (ID, PID, BookingAgencyID, Bond, InitialBond, ArrestDate, ReleaseDate, Notes) VALUES(?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `Bond` = VALUES(`Bond`), `UpdatedAt` = VALUES(`UpdatedAt`)";
+    static constexpr char *upsert_stmt = "INSERT INTO arrests (ID, PID, BookingAgencyID, Bond, InitialBond, ArrestDate, ReleaseDate, Notes, FID) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `Bond` = VALUES(`Bond`), `UpdatedAt` = VALUES(`UpdatedAt`)";
     #pragma clang diagnostic pop
 
     uint8_t count = 0;
     MYSQL_STMT *stmt;
-    MYSQL_BIND bind[8];
+    MYSQL_BIND bind[9];
     MYSQL_TIME arrest_ts, release_ts;
     bool rd_in = true;
 
@@ -155,6 +151,11 @@ bool Arrest::upsert(MYSQL *connection) {
     bind[7].buffer_length = note_len;
     bind[7].length = &note_len;
 
+    bind[8].buffer_type = MYSQL_TYPE_LONG;
+    bind[8].buffer = &this->fac_id;
+    bind[8].is_unsigned = true;
+    DEBUG("HERE\n");
+
     if (mysql_stmt_bind_param(stmt, bind)) {
         ERRORF("Failed to bind stmt params, error: %s\n", mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
@@ -162,7 +163,7 @@ bool Arrest::upsert(MYSQL *connection) {
     }
 
     if (mysql_stmt_execute(stmt)) {
-        ERRORF("Failed to execute stmt, error: %s\n", mysql_stmt_error(stmt));
+        ERRORF("Failed to execute stmt, error: %s\nAID: %lu\n", mysql_stmt_error(stmt), this->id);
         mysql_stmt_close(stmt);
         return false;
     }
@@ -210,6 +211,7 @@ Arrest *Arrest::fetch(uint64_t id, MYSQL *connection) {
 
     bind[0].buffer = &id;
     bind[0].buffer_type = MYSQL_TYPE_LONGLONG;
+    bind[0].is_unsigned = true;
 
     if (mysql_stmt_bind_param(stmt, bind)) {
         ERRORF("Failed to bind params, error: %s\n", mysql_stmt_error(stmt));

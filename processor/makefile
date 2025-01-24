@@ -13,12 +13,12 @@ all: src
 dev: 
 	bear -- make
 
-src: $(inc)/global.h $(inc)/rapidjson sniffy.out
+src: $(out) $(inc)/global.h $(inc)/rapidjson sniffy.out
 
 clean:
 	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib)
 
-sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o $(out)/charge.cpp.o $(out)/database.c.o $(out)/roster.c.o $(out)/datetimep.c.o
+sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o $(out)/charge.cpp.o $(out)/database.c.o $(out)/roster.c.o $(out)/datetimep.c.o $(out)/status.c.o
 	clang++ $^ -o $@ $(iflags) -lcrypto -lmysqlclient
 
 $(out):
@@ -39,10 +39,10 @@ $(inc)/global.h: ../global.h.in $(inc)
 $(lib)/rapidjson: $(lib)
 	git -C $(lib) clone https://github.com/Tencent/rapidjson
 
-$(out)/%.c.o: $(src)/%.c $(out)
+$(out)/%.c.o: $(src)/%.c
 	clang -c -o $@ $< $(module_compile_flags) -std=$(C_STD) $(iflags)
 
-$(out)/%.cpp.o: $(src)/%.cpp $(out)
+$(out)/%.cpp.o: $(src)/%.cpp
 	clang++ -c -o $@ $< $(module_compile_flags) -std=$(CXX_STD) $(iflags)
 
 .PHONY: dev clean
