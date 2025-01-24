@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
 
                             let s = Box::new(key.clone());
-                            a_sch.lock().unwrap().push_job(t, move || {
+                            // a_sch.lock().unwrap().push_job(t, move || {
                                 let mut out = module_loader::ModuleOut {
                                     enc: 0,
                                     out: std::ptr::null(),
@@ -90,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 module_loader::exec_module_inc(cstr.as_ptr(), m_id, &mut out);
 
                                 println!("{}", CStr::from_ptr(out.out).to_str().unwrap());
-                            });
+                            // });
 
                             t = t + inc;
                         }
