@@ -5,9 +5,14 @@
 #include <stdlib.h>
 
 #include "_loader.h"
+#include "module_loader.h"
 
 uint8_t _execute_module(const char *fn_name, const char *arg, const Module *module, ModuleOut *o_mod) {
     lua_State *ls = luaL_newstate();
+    uint8_t err;
+    const char *res = NULL;
+    size_t len;
+
     luaL_openlibs(ls);
     luaopen_base(ls);
     luaopen_io(ls);
@@ -17,7 +22,7 @@ uint8_t _execute_module(const char *fn_name, const char *arg, const Module *modu
     if (luaL_loadfile(ls, (char *) module->module_path) || lua_pcall(ls, 0, 0, 0)) {
         printf("ERROR: %s\n", lua_tostring(ls, -1));
         lua_close(ls);
-        return 1;
+        return MOE_FILE_LOAD_FAILURE;
     }
 
     lua_getglobal(ls, fn_name);
@@ -26,19 +31,33 @@ uint8_t _execute_module(const char *fn_name, const char *arg, const Module *modu
         lua_pushstring(ls, arg);
     }
 
-    if (lua_pcall(ls, arg != NULL, 1, 0)) {
+    if (lua_pcall(ls, arg != NULL, 2, 0)) {
         printf("Failed to fetch: %s\n", lua_tostring(ls, -1));
         lua_close(ls);
-        return -1;
+        return MOE_CALL_FAILURE;
     }
 
-    const char *res = lua_tostring(ls, -1);
-    o_mod->out = malloc(strlen(res) + 1);
+    // TODO ADD TYPE CHECKING HERE
+    err = lua_tonumber(ls, -2);
+
+    res = lua_tostring(ls, -1);
+
+    if (res == NULL) return err;
+
+    len = strlen(res);
+
+    o_mod->len = len;
+    o_mod->out = malloc(len + 1);
+    
+    if (o_mod->out == NULL) {
+        return MOE_ALLOCATION_FAILED;
+    }
+
     strcpy((char *) o_mod->out, res);
 
     lua_close(ls);
 
-    return -1;
+    return err;
 }
 
 RawLoadFunction _execute_lua_module = _execute_module;
@@ -127,6 +146,12 @@ uint8_t _lua_fetch_meta(const Module *module, ModuleMeta *data) {
     }
 
     data->start_time = lua_tonumber(ls, -1);
+
+    lua_pop(ls, 1);
+
+    if (lua_getfield(ls, -1, "inaccurate_time") == LUA_TBOOLEAN && lua_toboolean(ls, -1)) {
+        data->flags |= MO_INACCURATE_TIME;
+    }
 
     lua_pop(ls, 1);
 

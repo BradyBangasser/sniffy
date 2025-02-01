@@ -10,11 +10,12 @@
 const char *ignored_files[] = { "README.md", "module_loader.cpp", "module_loader.h", "lua_loader.c" };
 
 // typedef std::function<std::remove_pointer_t<RawLoadFunction>> ModuleCall;
-typedef std::function<uint8_t(const char *, Module *, ModuleOut *)> ModuleCall;
+typedef std::function<enum ModuleError (const char *, Module *, ModuleOut *)> ModuleCall;
 
 // TODO Switch this is a hashmap or tree
 Module modules[MAX_MODULES] = {};
 ModuleCall cmodules[MAX_MODULES] = {0};
+ModuleCall cimodules[MAX_MODULES] = {0};
 ModuleMeta mdata[MAX_MODULES] = {0};
 static uint16_t n_mods = 0;
 
@@ -68,7 +69,7 @@ extern "C" Module *load_modules(uint16_t *n) {
             printf("Registering module SM-%08X (%s)\n", n_mods, mdata[n_mods].facility_name);
 
             if (mdata[n_mods].is_incremental) {
-                cmodules[++n_mods] = std::bind_front(_execute_lua_module, "FETCH_INCREMENTAL");
+                cimodules[n_mods] = std::bind_front(_execute_lua_module, "FETCH_INCREMENTAL");
             }
 
             n_mods++;
@@ -87,24 +88,20 @@ extern "C" Module *load_modules(uint16_t *n) {
     }
 }
 
-extern "C" uint8_t exec_module(uint16_t mid, ModuleOut *out) {
+extern "C" enum ModuleError exec_module(uint16_t mid, ModuleOut *out) {
     if (cmodules[mid] == NULL || modules[mid].module_path[0] == 0x0) {
-        return 1;
+        return ModuleError::MOE_INVALID;
     }
 
-    uint8_t res = cmodules[mid](NULL, &modules[mid], out);
-
-    return -1;
+    return cmodules[mid](NULL, &modules[mid], out);
 }
 
-extern "C" uint8_t exec_module_inc(const char *id, uint16_t mid, ModuleOut *out) {
+extern "C" enum ModuleError exec_module_inc(const char *id, uint16_t mid, ModuleOut *out) {
     if (cmodules[mid] == NULL || modules[mid].module_path[0] == 0x0) {
-        return 1;
+        return ModuleError::MOE_INVALID;
     }
 
-    uint8_t res = cmodules[mid + 1](id, &modules[mid], out);
-
-    return -1;
+    return cimodules[mid](id, &modules[mid], out);
 }
 
 const char *get_ext(const char *path, int16_t length) {
@@ -134,5 +131,7 @@ extern "C" uint8_t fetch_module_meta(const Module *module, ModuleMeta *data) {
 
 extern "C" ModuleMeta *get_module_meta(uint16_t m) {
     if (m >= n_mods) return NULL;
+
+    printf("%b\n", mdata[m].flags);
     return mdata + m;
 }

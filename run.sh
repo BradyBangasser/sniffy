@@ -1,17 +1,8 @@
 pdir=$(pwd)
-if ! make -C $pdir/processor; then
-    echo "Failed to build processor"
-    exit
-fi
-
-if ! cargo build --manifest-path $pdir/preprocessor/Cargo.toml -r; then
-    echo "Failed to build preprocessor"
-    exit
-fi
-
+make || exit
 exec $pdir/processor/sniffy.out &
 sleep 1
-exec $pdir/preprocessor/target/release/sniffy &
+exec $pdir/preprocessor/target/debug/sniffy &
 
 while :; do
     :

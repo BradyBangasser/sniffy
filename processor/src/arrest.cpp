@@ -15,8 +15,14 @@ bool Arrest::verify() {
     return true;
 }
 
-bool Arrest::generate_id() {
-    struct tm *tm = &arrested_at;
+bool Arrest::generate_id(struct FacilityData *fac_dat) {
+    struct tm *tm;
+    if (fac_dat && fac_dat->flags & RosterOptions::MO_INACCURATE_TIME) {
+        const time_t t = time(NULL);
+        tm = gmtime(&t);
+    } else {
+        tm = &arrested_at;
+    }
     id = 0;
     uint64_t buf;
 
@@ -154,7 +160,6 @@ bool Arrest::upsert(MYSQL *connection) {
     bind[8].buffer_type = MYSQL_TYPE_LONG;
     bind[8].buffer = &this->fac_id;
     bind[8].is_unsigned = true;
-    DEBUG("HERE\n");
 
     if (mysql_stmt_bind_param(stmt, bind)) {
         ERRORF("Failed to bind stmt params, error: %s\n", mysql_stmt_error(stmt));
@@ -274,7 +279,7 @@ Arrest *Arrest::fetch(uint64_t id, MYSQL *connection) {
     return arr;
 }
 
-Arrest::Arrest(uint64_t id, uint8_t pid[32], uint32_t bond, std::vector<std::string> notes) : id(id), bond(bond), initial_bond(bond), person(NULL), notes(notes) {
+Arrest::Arrest(uint64_t id, uint8_t pid[32], uint32_t bond, std::vector<std::string> notes) : id(id), bond(bond), person(NULL), notes(notes) {
     this->pid = new uint8_t[32];
     memcpy(this->pid, pid, 32);
     memset(&arrested_at, 1, sizeof(struct tm));

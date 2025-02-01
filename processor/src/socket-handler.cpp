@@ -7,6 +7,7 @@
 #include "processor.hpp"
 #include "logging.h"
 #include "status.h"
+#include "global.h"
 
 extern "C" void *socket_handler(void *fdp) {
     if (fdp == NULL) {
@@ -15,9 +16,12 @@ extern "C" void *socket_handler(void *fdp) {
 
     struct RosterData d;
     struct pollfd ps;
+
     uint8_t *buffer;
-    uint8_t ack = 0x06;
     int fd = *((int *) fdp), p;
+
+    constexpr uint8_t ack = 0x06;
+
     std::string json;
 
     ps.fd = fd;
@@ -43,11 +47,9 @@ extern "C" void *socket_handler(void *fdp) {
             return NULL;
         }
 
-        DEBUGF("Facility %c%c-%X Data-len: %u\n", d.state_code[0], d.state_code[1], d.facId, d.data_len);
-
         send(fd, &ack, 1, 0);
 
-        buffer = (uint8_t *) malloc(d.data_len);
+        buffer = (uint8_t *) calloc(d.data_len + 1, 1);
 
         if (buffer == NULL) {
             ERROR("Failed to allocate memory for socket messages\n");

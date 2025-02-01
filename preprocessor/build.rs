@@ -11,7 +11,9 @@ fn main() {
     println!("cargo:rustc-link-lib=stdc++");
     println!("cargo:rustc-link-lib=lua5.4");
     let bindings = bindgen::Builder::default()
+        .clang_arg("-Itarget/lib")
         .header("modules/module_loader.h")
+        .header("target/lib/global.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("I can't generate bindings :(");

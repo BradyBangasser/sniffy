@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 static struct _StatusNode *statuses = NULL;
-static uint8_t len = 0;
 static struct winsize ws = {0};
 
 void _print_status() {
@@ -15,6 +14,7 @@ void _print_status() {
     printf(
             "\033[H"
             "\033[J"
+            ""
           );
 
     while (curs != NULL) {

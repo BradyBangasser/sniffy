@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <linux/limits.h>
+#include "global.h"
 
 #define MAX_MODULES 32
 
@@ -8,8 +9,14 @@
 extern "C" {
 #endif
 
-enum ModuleType {
-    MT_LUA,
+enum ModuleError : uint8_t {
+    MOE_OK = 0x0,
+    MOE_PARSE_FAILURE = 0x1,
+    
+    MOE_FILE_LOAD_FAILURE = 0xFC,
+    MOE_CALL_FAILURE = 0xFD,
+    MOE_ALLOCATION_FAILED = 0xFE,
+    MOE_INVALID = 0xFF,
 };
 
 enum Encoding {
@@ -24,6 +31,7 @@ typedef struct {
 typedef struct {
     enum Encoding enc;
     const char *out;
+    uint32_t len;
 } ModuleOut;
 
 typedef struct {
@@ -35,13 +43,14 @@ typedef struct {
     uint8_t start_time;
     uint8_t run_interval;
     uint8_t is_incremental;
-    enum ModuleType type;
+    uint8_t flags;
+    enum RosterType type;
 } ModuleMeta;
 
 Module *load_modules(uint16_t *n);
 uint8_t fetch_module_meta(const Module *module, ModuleMeta *data);
-uint8_t exec_module(uint16_t mid, ModuleOut *out);
-uint8_t exec_module_inc(const char *param, uint16_t mid, ModuleOut *out);
+enum ModuleError exec_module(uint16_t mid, ModuleOut *out);
+enum ModuleError exec_module_inc(const char *param, uint16_t mid, ModuleOut *out);
 ModuleMeta *get_module_meta(uint16_t m);
 
 #ifdef __cplusplus

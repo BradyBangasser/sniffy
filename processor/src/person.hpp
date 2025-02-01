@@ -54,7 +54,7 @@ class Person {
             }
 
             middle_name = stringification::capitialize_name(str);
-;
+
             return true;
         }
 

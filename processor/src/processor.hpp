@@ -9,6 +9,7 @@ struct FacilityData {
     FacilityData(const struct RosterData *);
     const char state_code[3];
     uint32_t id;
+    uint8_t flags;
 };
 
 class Processor {

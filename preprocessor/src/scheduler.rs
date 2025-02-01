@@ -1,15 +1,14 @@
 pub mod scheduler {
     use chrono::{DateTime, Local};
     use std::cmp::Reverse;
-    use std::ops::{Deref, DerefMut};
     use std::thread::{self, sleep, JoinHandle};
     use std::collections::BinaryHeap;
-    use std::sync::{Arc, Mutex, OnceLock};
+    use std::sync::{Arc, Mutex};
     use std::time;
 
     struct Job {
         time: DateTime<Local>,
-        interval: Option<u8>,
+        _interval: Option<u8>,
         closure: Box<dyn Fn() -> () + Send + 'static>,
     }
 
@@ -35,7 +34,7 @@ pub mod scheduler {
 
     pub struct Scheduler {
         job_queue: Arc<Mutex<BinaryHeap<Reverse<Box<Job>>>>>,
-        worker: JoinHandle<()>,
+        _worker: JoinHandle<()>,
     }
 
     impl Scheduler {
@@ -63,7 +62,7 @@ pub mod scheduler {
             let jqc = Arc::clone(&jq);
             let s = Scheduler {
                 job_queue: jq,
-                worker: thread::spawn(move || {
+                _worker: thread::spawn(move || {
                     Scheduler::run_loop(jqc);
                 })
             };
@@ -77,7 +76,7 @@ pub mod scheduler {
             {
                 self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
                     time: t,
-                    interval: None,
+                    _interval: None,
                     closure: Box::new(closure)
                 })));
             }
@@ -88,7 +87,7 @@ pub mod scheduler {
         {
                 self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
                     time: t,
-                    interval: Some(interval),
+                    _interval: Some(interval),
                     closure: Box::new(closure)
                 })));
         }

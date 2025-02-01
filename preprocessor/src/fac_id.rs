@@ -1,4 +1,4 @@
-pub fn generate_facility_id(address: &[u8], name: &[u8], cap: u16) -> u32 {
+pub fn generate_facility_id(address: &[u8], name: &[u8], _cap: u16) -> u32 {
     let mut id: u32 = 5381;
 
 

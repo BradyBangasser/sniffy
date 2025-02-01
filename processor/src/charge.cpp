@@ -1,5 +1,7 @@
 #include "charge.hpp"
 #include "logging.h"
+#include "global.h"
+#include "processor.hpp"
 
 #include <time.h>
 #include <mysql/mysql.h>
@@ -7,7 +9,7 @@
 
 uint32_t Charge::id_c = 0;
 
-Charge::Charge() {
+Charge::Charge() : bond(0) {
     memset(&charged_at, 1, sizeof(struct tm));
 }
 
@@ -23,9 +25,15 @@ bool Charge::verify() {
     return true;
 }
 
-bool Charge::generate_id() {
+bool Charge::generate_id(struct FacilityData *fac_dat) {
     if (charged_at.tm_year == 1) return false;
-    struct tm *tm = &charged_at;
+    struct tm *tm;
+    if (fac_dat && fac_dat->flags & RosterOptions::MO_INACCURATE_TIME) {
+        const time_t t = time(NULL);
+        tm = gmtime(&t);
+    } else {
+        tm = &charged_at;
+    }
     uint64_t buf;
 
     id = 0;
@@ -86,8 +94,6 @@ bool Charge::upsert(MYSQL *connection) {
         mysql_stmt_close(stmt);
         return false;
     }
-
-    DEBUGF("%lu\n", this->arrest_id);
 
     bind[0].buffer_type = MYSQL_TYPE_LONGLONG;
     bind[0].buffer = (char *) &this->id;
@@ -205,6 +211,7 @@ std::vector<Charge> Charge::fetch(uint64_t aid, MYSQL *connection) {
 
     bind[0].buffer = &aid;
     bind[0].buffer_type = MYSQL_TYPE_LONGLONG;
+    bind[0].is_unsigned = true;
 
     if (mysql_stmt_bind_param(stmt, bind)) {
         ERRORF("Failed to bind params, error: %s\n", mysql_stmt_error(stmt));

@@ -31,14 +31,15 @@ class Charge {
         Charge();
         inline std::string get_sid() const { return statute_id; }
         inline std::vector<std::string> get_notes() const { return notes; }
-        template <bool C, typename A> static std::vector<Charge> vec_from_json(uint64_t aid, const char state_code[3], rapidjson::GenericArray<C, A> charges) {
+        template <bool C, typename A> static std::vector<Charge> vec_from_json(uint64_t aid, const char state_code[3], struct tm default_time, rapidjson::GenericArray<C, A> charges, struct FacilityData *fac_dat = NULL) {
             std::vector<Charge> parsed_charges;
 
             rapidjson::Value::ConstValueIterator curs = charges.Begin();
 
             while (curs != charges.End()) {
                 Charge c;
-                if (from_json(c, aid, std::string(state_code), curs->GetObject())) {
+                if (from_json(c, aid, std::string(state_code), default_time, curs->GetObject())) {
+                    c.generate_id(fac_dat);
                     parsed_charges.push_back(c);
                 }
                 curs++;
@@ -47,16 +48,18 @@ class Charge {
             return parsed_charges;
         }
 
-        template <bool C, typename A> static bool from_json(Charge &charge, uint64_t aid, std::string state_code, rapidjson::GenericObject<C, A> json) {
+        template <bool C, typename A> static bool from_json(Charge &charge, uint64_t aid, std::string state_code, struct tm default_time, rapidjson::GenericObject<C, A> json) {
             rapidjson::GenericMemberIterator curs = json.MemberBegin();
 
             Charge c;
+
+            c.charged_at = default_time;
 
             c.arrest_id = aid;
 
             for (;curs != json.MemberEnd(); curs++) {
                 std::string field = curs->name.GetString();
-                if (field == "name") {
+                if (field == "name" || field == "statute") {
                     std::string val = std::string(curs->value.GetString());
                     std::transform(val.begin(), val.end(), val.begin(), ::toupper);
                     c.statute_id = state_code + '-' + val;
@@ -122,7 +125,7 @@ class Charge {
         }
 
         bool verify();
-        bool generate_id();
+        bool generate_id(struct FacilityData *fac_dat = NULL);
         bool upsert(MYSQL *connection);
         inline uint32_t get_bond() const { return bond; }
         inline void set_bond(uint32_t bond) { this->bond = bond; }

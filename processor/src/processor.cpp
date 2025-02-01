@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "arrest.hpp"
+#include "rapidjson/document.h"
 #include "roster.h"
 #include "logging.h"
 #include "database.h"
@@ -17,6 +18,7 @@ static constexpr char delete_stmt[] = "DELETE FROM roster WHERE PID=? AND FID=?"
 FacilityData::FacilityData(const struct RosterData *d) : state_code{0} {
     memcpy((void *) this->state_code, d->state_code, 2);
     this->id = d->facId;
+    this->flags = d->flags;
 }
 
 void Processor::process_json_string(const struct RosterData *d, const char *str, Status *status) {
@@ -65,7 +67,15 @@ void Processor::process_json_string(const struct RosterData *d, rapidjson::Strin
     rapidjson::GenericArray inmates = doc.IsObject() ? doc.GetObject().FindMember("inmates")->value.GetArray() : doc.GetArray();
 
     if (doc.IsObject()) {
-
+        rapidjson::GenericObject obj = doc.GetObject();
+        rapidjson::GenericMemberIterator size = obj.FindMember("size");
+        if (size->value.IsInt()) {
+            status->expected = size->value.GetInt();
+            update_state();
+        } else if ((size = obj.FindMember("total"))->value.IsInt()) {
+            status->expected = size->value.GetInt();
+            update_state();
+        }
     }
 
     for (auto &inmate : inmates) {

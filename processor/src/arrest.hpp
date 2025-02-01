@@ -4,6 +4,7 @@
 #include "stringification.hpp"
 #include "person.hpp"
 #include "processor.hpp"
+#include "processor.hpp"
 
 #include <rapidjson/document.h>
 #include <mysql/mysql.h>
@@ -16,7 +17,6 @@ class Arrest {
         static uint16_t id_c;
         uint64_t id;
         uint32_t bond;
-        uint32_t initial_bond;
         uint32_t fac_id;
         char state_code[3] = {0};
 
@@ -35,16 +35,16 @@ class Arrest {
         Arrest(uint64_t id, uint8_t pid[32], uint32_t bond, std::vector<std::string> notes);
 
         template <typename E, typename A> static bool process_json_field(Arrest &arr, std::string field, rapidjson::GenericValue<E, A> &val) {
-            if (field == "firstname") return arr.person->set_first_name(val);
-            if (field == "middlename") return arr.person->set_middle_name(val);
-            if (field == "lastname") return arr.person->set_last_name(val);
+            if (field == "firstname" || field == "fname") return arr.person->set_first_name(val);
+            if (field == "middlename" || field == "mname") return arr.person->set_middle_name(val);
+            if (field == "lastname" || field == "lname") return arr.person->set_last_name(val);
             if (field == "suffix") return arr.person->set_suffix(val);
             if (field == "race") { arr.person->set_race(val.GetString()); return true; }
             if (field == "sex") { arr.person->set_sex(val.GetString()); return true; }
             if (field == "primarycharge" || field == "primarychargedescription") return true; 
             if (field == "height") return arr.person->set_height(val.GetString());
             if (field == "charges") {
-                arr.charges = Charge::vec_from_json(arr.id, arr.state_code, val.GetArray());
+                arr.charges = Charge::vec_from_json(arr.id, arr.state_code, arr.arrested_at, val.GetArray());
                 auto f = [&](const uint32_t &t, const Charge &c) { return t + c.get_bond(); };
                 arr.bond = std::accumulate(arr.charges.begin(), arr.charges.end(), (uint32_t) 0, f);
                 return true;
@@ -76,7 +76,7 @@ class Arrest {
                 return true;
             }
 
-            if (field == "arrestdate") {
+            if (field == "arrestdate" || field == "arrest_date") {
                 return strptime(val.GetString(), "%m/%d/%Y %r", &arr.arrested_at);
             }
 
@@ -108,7 +108,10 @@ class Arrest {
                 curs++;
             }
 
-            arr.verify();
+            if (!arr.verify()) {
+                DEBUG("Failed to verify arrest\n");
+                throw std::exception();
+            }
 
             return arr;
         }
@@ -116,7 +119,7 @@ class Arrest {
 
         // ensures all required elements of the arrest exist
         bool verify();
-        bool generate_id();
+        bool generate_id(struct FacilityData *fac_dat = NULL);
         bool upsert(MYSQL *);
         
         inline Person *get_person() { return person; }

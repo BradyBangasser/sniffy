@@ -6,7 +6,7 @@
 #include <format>
 #include <numeric>
 
-Person::Person() : id{ 0 } {
+Person::Person() : suffix(NULL), id{ 0 } {
 }
 
 bool Person::generate_id() {
@@ -91,7 +91,10 @@ bool Person::verify(bool genId) {
     if (this->first_name.length() < 1) return false;
     if (this->last_name.length() < 1) return false;
 
-    if (genId && !id_set) generate_id();
+    if (genId && !id_set && !generate_id()) {
+        WARN("Failed to generate ID\n");
+        return false;
+    }
 
     return true;
 }

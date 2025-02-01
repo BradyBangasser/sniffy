@@ -1,4 +1,7 @@
-#pragma once
+#ifndef H_GLOBAL
+#define H_GLOBAL
+
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +21,25 @@ extern "C" {
         S_MALE
     };
 
+    struct RosterData {
+        char state_code[2];
+        uint32_t facId;
+        uint32_t data_len;
+        uint8_t flags;
+        uint8_t unused[19];
+    }__attribute__((packed));
+
+
+    enum RosterType {
+        MT_LUA,
+    };
+
+    enum RosterOptions {
+        MO_INACCURATE_TIME = 0x01,
+    };
+
 #ifdef __cplusplus
 }
+#endif
+
 #endif
