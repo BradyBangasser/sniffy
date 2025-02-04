@@ -132,6 +132,12 @@ class Arrest {
             }
         }
 
+        inline bool has_been_released() {
+            DEBUGF("%d\n", release_date.tm_year);
+            assert(release_date.tm_year != 0 && difftime(mktime(&release_date), time(NULL)) > 0);
+            return false;
+        }
+
         inline std::vector<Charge> &get_charges() { return charges; }
         inline void swap_charges(std::vector<Charge> &charges) { std::swap(charges, this->charges); }
 
