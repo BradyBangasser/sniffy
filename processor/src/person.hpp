@@ -15,15 +15,15 @@ class Person {
         std::string first_name;
         std::string middle_name;
         std::string last_name;
-        std::string *suffix;
-        enum sex sex;
-        enum race race;
-        uint16_t birth_year;
-        uint8_t height; // in inches
-        uint16_t weight;
+        std::string *suffix = 0;
+        enum sex sex = S_UNKNOWN;
+        enum race race = SR_UNKNOWN;
+        uint16_t birth_year = 0;
+        uint8_t height = 0; // in inches
+        uint16_t weight = 0;
         std::vector<std::string> notes;
         std::string versioning;
-        uint8_t id[32];
+        uint8_t id[32] = {0};
         bool id_set = false;
         
         Person();

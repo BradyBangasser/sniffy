@@ -66,5 +66,7 @@ extern "C" void *socket_handler(void *fdp) {
         free(buffer);
     }
 
+    INFO("Done\n");
+
     return NULL;
 }

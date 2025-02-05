@@ -12,12 +12,12 @@ void _print_status() {
     struct _StatusNode *curs = statuses;
 
     printf(
-            "\033[H"
-            "\033[J"
+            // "\033[H"
+            // "\033[J"
             ""
           );
 
-    while (curs != NULL) {
+    while (false && curs != NULL) {
         uint16_t width = ws.ws_col - 4;
         uint16_t progress = width * (curs->s.current * 100 / curs->s.expected) / 100;
         uint16_t i;

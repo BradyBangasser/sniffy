@@ -7,6 +7,9 @@
 #include "processor.hpp"
 
 #include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <mysql/mysql.h>
 #include <vector>
 #include <numeric>
@@ -77,11 +80,13 @@ class Arrest {
             }
 
             if (field == "arrestdate" || field == "arrest_date") {
-                return strptime(val.GetString(), "%m/%d/%Y %r", &arr.arrested_at);
+                return strptime(val.GetString(), "%m/%d/%Y %r", &arr.arrested_at) || 
+                    strptime(val.GetString(), "%m/%d/%Y", &arr.arrested_at);
             }
 
-            if (field == "releasedate") {
-                return strptime(val.GetString(), "%m/%d/%Y %r", &arr.release_date);
+            if (field == "releasedate" || field == "release_date") {
+                return strptime(val.GetString(), "%m/%d/%Y %r", &arr.release_date) ||
+                    strptime(val.GetString(), "%m/%d/%Y", &arr.release_date);
             }
 
             if (!val.IsNull()) {
@@ -109,8 +114,12 @@ class Arrest {
             }
 
             if (!arr.verify()) {
-                DEBUG("Failed to verify arrest\n");
-                throw std::exception();
+                rapidjson::StringBuffer sb;
+                rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+                rapidjson::GenericValue sub(obj);
+                sub.Accept(writer);
+                DEBUGF("Failed to verify arrest (%s) -> %s\n", arr.get_person()->get_name().c_str(), sb.GetString());
+                // throw std::exception();
             }
 
             return arr;
@@ -133,9 +142,7 @@ class Arrest {
         }
 
         inline bool has_been_released() {
-            DEBUGF("%d\n", release_date.tm_year);
-            assert(release_date.tm_year != 0 && difftime(mktime(&release_date), time(NULL)) > 0);
-            return false;
+            return (release_date.tm_year != 0 && difftime(mktime(&release_date), time(NULL)) < 0);
         }
 
         inline std::vector<Charge> &get_charges() { return charges; }

@@ -132,6 +132,5 @@ extern "C" uint8_t fetch_module_meta(const Module *module, ModuleMeta *data) {
 extern "C" ModuleMeta *get_module_meta(uint16_t m) {
     if (m >= n_mods) return NULL;
 
-    printf("%b\n", mdata[m].flags);
     return mdata + m;
 }

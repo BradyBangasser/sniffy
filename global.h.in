@@ -18,7 +18,8 @@ extern "C" {
 
     enum sex {
         S_FEMALE,
-        S_MALE
+        S_MALE,
+        S_UNKNOWN,
     };
 
     struct RosterData {

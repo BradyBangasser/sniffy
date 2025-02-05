@@ -40,9 +40,9 @@ $(lib)/rapidjson: $(lib)
 	git -C $(lib) clone https://github.com/Tencent/rapidjson
 
 $(out)/%.c.o: $(src)/%.c
-	clang -c -o $@ $< $(module_compile_flags) -std=$(C_STD) $(iflags)
+	clang -c -o $@ $< $(module_compile_flags) -std=$(C_STD) $(iflags) -g
 
 $(out)/%.cpp.o: $(src)/%.cpp
-	clang++ -c -o $@ $< $(module_compile_flags) -std=$(CXX_STD) $(iflags)
+	clang++ -c -o $@ $< $(module_compile_flags) -std=$(CXX_STD) $(iflags) -g
 
 .PHONY: dev clean

@@ -2,8 +2,8 @@ META_DATA = {
     facility_name = "Story County Justice Center",
     facility_address = "1315 S B Ave, Nevada, IA 50201",
     facility_cap = 104,
-    start_time = 10,
-    run_interval = 30,
+    start_time = 37,
+    run_interval = 3,
     state_code = "IA",
 }
 
@@ -37,7 +37,7 @@ function FETCH ()
 
     if xsrft == nil then
         print("X-Xsrf-Token is null")
-        return ""
+        return 1, ""
     end
 
     req = request.new_from_uri("https://centraliowa.policetocitizen.com/api/Inmates/241")
@@ -57,5 +57,5 @@ function FETCH ()
 
     rheaders, stream = req:go()
 
-    return stream:get_body_as_string()
+    return 0, stream:get_body_as_string()
 end

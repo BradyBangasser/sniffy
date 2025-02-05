@@ -87,12 +87,17 @@ void Processor::process_json_string(const struct RosterData *d, rapidjson::Strin
 
         Arrest a = Arrest::from_json(facdat, inmate.GetObject());
 
+        struct RosterEntry *ent = roster_remove(roster, a.get_person()->get_id());
+
         if (a.has_been_released()) {
-            a.upsert(database::get_connection());
+            if (ent == NULL) {
+                // TODO: Make this insert into the database, probably in the next version
+                // a.upsert(database::get_connection());
+            } else {
+                roster_insert(roster, roster_create_entry(a.get_person()->get_id(), a.get_id()));
+            }
             continue;
         }
-
-        struct RosterEntry *ent = roster_remove(roster, a.get_person()->get_id());
 
         if (ent != NULL) {
             if (status != NULL) {

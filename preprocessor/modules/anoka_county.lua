@@ -27,7 +27,7 @@ function FETCH()
     local n = 0
 
     for _,v in pairs(obj) do
-        if n > 50 then
+        if n > 1000 then
             break
         end
         local booking_info = {}

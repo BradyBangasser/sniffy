@@ -37,10 +37,10 @@ fn schedule_module_fetch(m_id: u16, meta: Arc<module_loader::ModuleMeta>, schedu
 
     if meta.is_incremental != 0 {
 
-        let init_msg = [&meta.state_code[0..2], &meta.facility_id.to_ne_bytes(), &5_u32.to_ne_bytes(), &[meta.flags]].concat();
+        // let init_msg = [&meta.state_code[0..2], &meta.facility_id.to_ne_bytes(), &5_u32.to_ne_bytes(), &[meta.flags]].concat();
 
         let sch_ref = scheduler.clone();
-        scheduler.lock().unwrap().push_interval_job(Local::now(), meta_c.run_interval, move || {
+        scheduler.lock().unwrap().push_interval_job(t, meta_c.run_interval, move || {
             println!("Executing module {} Fac ID: {}-{:08X}", CStr::from_bytes_until_nul(&meta_c.facility_name).unwrap().to_str().unwrap(), CStr::from_bytes_until_nul(&meta_c.state_code).unwrap().to_str().unwrap(), meta_c.facility_id);
             let results: Arc<Mutex<People>> = Arc::new(Mutex::new(People { size: 0, inmates: vec!() }));
             let cache: Arc<Mutex<HashMap<String, module_loader::ModuleOut>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -124,10 +124,10 @@ fn schedule_module_fetch(m_id: u16, meta: Arc<module_loader::ModuleMeta>, schedu
                 }
 
             }
-
-            println!("Scheduled Facility {} ({}-{:X}) to be scanned every {} minutes, starting at {}", CStr::from_bytes_until_nul(&meta.facility_name).unwrap().to_str().unwrap(), CStr::from_bytes_until_nul(&meta.state_code).unwrap().to_str().unwrap(), meta.facility_id, meta.run_interval, t);
         });
+        println!("Scheduled Facility {} ({}-{:X}) to be scanned every {} minutes, starting at {}", CStr::from_bytes_until_nul(&meta.facility_name).unwrap().to_str().unwrap(), CStr::from_bytes_until_nul(&meta.state_code).unwrap().to_str().unwrap(), meta.facility_id, meta.run_interval, t);
     } else {
+        println!("HERE");
         scheduler.lock().unwrap().push_interval_job(t, meta.run_interval, move || {
             let mut stream = UnixStream::connect("/tmp/sniffy.socket").unwrap();
             stream.set_nonblocking(false).expect("Failed to set socket to blocking");

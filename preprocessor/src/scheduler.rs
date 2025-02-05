@@ -1,5 +1,5 @@
 pub mod scheduler {
-    use chrono::{DateTime, Local};
+    use chrono::{DateTime, Local, Duration};
     use std::cmp::Reverse;
     use std::thread::{self, sleep, JoinHandle};
     use std::collections::BinaryHeap;
@@ -8,8 +8,8 @@ pub mod scheduler {
 
     struct Job {
         time: DateTime<Local>,
-        _interval: Option<u8>,
-        closure: Box<dyn Fn() -> () + Send + 'static>,
+        interval: Option<u8>,
+        closure: Arc<dyn Fn() -> () + Sync + Send + 'static>,
     }
 
     impl PartialEq for Job {
@@ -46,6 +46,17 @@ pub mod scheduler {
                     while let Some(job) = mjq.peek() {
                         if job.0.time > now { break }
                         let j = mjq.pop().unwrap();
+
+                        if j.0.interval.is_some() {
+                            let int = j.0.interval.unwrap();
+                            mjq.push(Reverse(Box::new(Job {
+                                time: Local::now() + Duration::minutes(int.into()),
+                                interval: Some(int),
+                                closure: Arc::clone(&j.0.closure),
+                            })));
+                        }
+
+
                         thread::spawn(move || {
                             (j.0.closure)();
                         });
@@ -71,25 +82,25 @@ pub mod scheduler {
         }
 
         pub fn push_job<T>(&mut self, t: DateTime<Local>, closure: T)
-            where 
-                T: Fn() -> () + Send + 'static
-            {
-                self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
-                    time: t,
-                    _interval: None,
-                    closure: Box::new(closure)
-                })));
-            }
+        where 
+            T: Fn() -> () + Send + Sync + 'static
+        {
+            self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
+                time: t,
+                interval: None,
+                closure: Arc::new(closure)
+            })));
+        }
 
         pub fn push_interval_job<T>(&mut self, t: DateTime<Local>, interval: u8, closure: T)
-            where 
-                T: Fn() -> () + Send + 'static
+        where 
+            T: Fn() -> () + Sync + Send + 'static
         {
-                self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
-                    time: t,
-                    _interval: Some(interval),
-                    closure: Box::new(closure)
-                })));
+            self.job_queue.lock().unwrap().push(Reverse(Box::new(Job {
+                time: t,
+                interval: Some(interval),
+                closure: Arc::new(closure),
+            })));
         }
     }
 
