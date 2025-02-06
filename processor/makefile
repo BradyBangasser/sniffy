@@ -16,7 +16,7 @@ dev:
 src: $(out) $(inc)/global.h $(inc)/rapidjson sniffy.out
 
 clean:
-	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib)
+	rm -rf sniffy.out $(out) $(lib) $(inc) $(lib) .cache
 
 sniffy.out: $(out)/main.cpp.o $(out)/listener.c.o $(out)/socket-handler.cpp.o $(out)/processor.cpp.o $(out)/arrest.cpp.o $(out)/person.cpp.o $(out)/sex.c.o $(out)/race.c.o $(out)/stringification.cpp.o $(out)/logging.c.o $(out)/charge.cpp.o $(out)/database.c.o $(out)/roster.c.o $(out)/datetimep.c.o $(out)/status.c.o
 	clang++ $^ -o $@ $(iflags) -lcrypto -lmysqlclient
