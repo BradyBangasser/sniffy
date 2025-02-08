@@ -47,7 +47,7 @@ typedef struct {
     uint16_t weight; // In Pounds
 
     char *address;
-    uint32_t phone_number; // Doesn't support internation numbers
+    uint32_t phone_number; // Doesn't support international numbers
 
     char *notes;
     ssize_t notes_len;
@@ -56,4 +56,5 @@ typedef struct {
 } Person;
 
 e_err person_init(Person *p);
+
 e_err person_destroy(Person *p);
