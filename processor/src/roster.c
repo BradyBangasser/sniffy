@@ -123,7 +123,7 @@ struct RosterEntry *roster_remove(struct Roster *roster, const uint8_t pid[32]) 
 
 struct Roster *fetch_roster(MYSQL *connection, uint32_t fac_id) {
     MYSQL_STMT *stmt;
-    MYSQL_BIND bind[2];
+    MYSQL_BIND bind[2] = {0};
     uint8_t id[32] = { 0xCC };
     uint64_t id_len = 0;
     uint64_t aid = 0;

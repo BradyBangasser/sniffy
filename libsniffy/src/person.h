@@ -3,6 +3,8 @@
 #include <inttypes.h>
 #include <sys/types.h>
 
+#include <mysql/mysql.h>
+
 #include "errors.h"
 
 typedef enum : char {
@@ -56,5 +58,11 @@ typedef struct {
 } Person;
 
 e_err person_init(Person *p);
+
+e_err person_set_name(Person *p, const char *first_name, const char *middle_name, const char *last_name, const char *suffix);
+e_err person_set_birth_year(Person *p, uint8_t birth_year);
+
+e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p);
+e_err person_fetch_by_detail(MYSQL *conn, Person *p);
 
 e_err person_destroy(Person *p);

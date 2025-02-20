@@ -10,6 +10,7 @@
 
 typedef struct Charge Charge;
 
+
 enum E_ArrestImpFlags {
     EAIF_PERSON_SET = 0x1,
     EAIF_BOND_SET = 0x2,
@@ -44,8 +45,13 @@ e_err arrest_init(Arrest *arr);
 
 /**
  * Checks if the arrest is linked to a full person object
+ * returns 0 if the arrest contains a pointer to a full person
  */ 
 static inline uint8_t arrest_has_full_person(Arrest *arr) { return arr->_person.p == NULL || arr->_iflags ^ EAIF_PERSON_SET; }
+static inline uint8_t arrest_has_pid(Arrest *arr) { return arr->_person.p == NULL || arr->_iflags & EAIF_PERSON_SET; }
+static inline Person *arrest_get_person(Arrest *arr) { return arrest_has_full_person(arr) ?  NULL : arr->_person.p; }
+
+e_err arrest_set_charges(Arrest *arr, Charge *c, size_t n_charges);
 
 /**
  * Destroy the arrest structure
