@@ -13,8 +13,18 @@ endif ()
 
 enable_testing()
 
+find_library(LIBMYSQLCLIENT mysqlclient REQUIRED)
+find_library(LIBSSL ssl REQUIRED)
+find_library(LIBCRYPT crypt REQUIRED)
+
 add_library(sniffy src/arrest.c src/person.c)
 add_library(sniffy::sniffy ALIAS sniffy)
+
+add_library(snifftest test/tdatabase.c)
+add_library(snifftest::snifftest ALIAS snifftest)
+
+target_link_libraries(sniffy ${LIBMYSQLCLIENT} ${LIBSSL} ${LIBCRYPT})
+target_link_libraries(snifftest ${LIBMYSQLCLIENT} ${LIBSSL} ${LIBCRYPT})
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 
@@ -25,7 +35,12 @@ generate_export_header(sniffy EXPORT_FILE_NAME)
 set_target_properties(sniffy PROPERTIES PUBLIC_HEADER "src/arrest.h;src/charge.h;src/person.h")
 add_custom_command(TARGET sniffy POST_BUILD COMMAND cp ${CMAKE_SOURCE_DIR}/src/*.h ${CMAKE_BINARY_DIR}/include/)
 
-add_executable(ArrestInitializationTest test/arrest_initialization.c)
-target_link_libraries(ArrestInitializationTest sniffy)
-target_include_directories(ArrestInitializationTest PRIVATE ${CMAKE_BINARY_DIR}/include)
-add_test(NAME ArrestInitializationTest COMMAND ArrestInitializationTest)
+function(addtest files)
+    add_executable(${files}.test.out tests/${files})
+    target_link_libraries(${files}.test.out sniffy snifftest)
+    target_include_directories(${files}.test.out PRIVATE ${CMAKE_BINARY_DIR}/include)
+    add_test(NAME ${files} COMMAND ${files}.test.out)
+endfunction()
+
+addtest(arrest_initialization.c)
+addtest(person_initialization.c)
