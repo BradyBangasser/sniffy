@@ -115,29 +115,35 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     bind[2].buffer = (void *) p->last_name;
     bind[2].buffer_length = ln_l;
 
-    p->suffix = calloc(sf_l + 1, sizeof(char));
-    if (p->suffix == NULL) {
-        return ERR_ALLOC_FAILURE;
+    if (sf_l) {
+        p->suffix = calloc(sf_l + 1, sizeof(char));
+        if (p->suffix == NULL) {
+            return ERR_ALLOC_FAILURE;
+        }
+
+        bind[3].buffer = (void *) p->suffix;
+        bind[3].buffer_length = sf_l;
     }
 
-    bind[3].buffer = (void *) p->suffix;
-    bind[3].buffer_length = sf_l;
+    if (ad_l) {
+        p->address = calloc(ad_l + 1, sizeof(char));
+        if (p->address == NULL) {
+            return ERR_ALLOC_FAILURE;
+        }
 
-    p->address = calloc(ad_l + 1, sizeof(char));
-    if (p->address == NULL) {
-        return ERR_ALLOC_FAILURE;
+        bind[8].buffer = (void *) p->address;
+        bind[8].buffer_length = ad_l;
     }
 
-    bind[8].buffer = (void *) p->address;
-    bind[8].buffer_length = ad_l;
+    if (no_l) {
+        p->notes = calloc(no_l + 1, sizeof(char));
+        if (p->notes == NULL) {
+            return ERR_ALLOC_FAILURE;
+        }
 
-    p->notes = calloc(no_l + 1, sizeof(char));
-    if (p->notes == NULL) {
-        return ERR_ALLOC_FAILURE;
+        bind[10].buffer = (void *) p->notes;
+        bind[10].buffer_length = no_l;
     }
-
-    bind[10].buffer = (void *) p->notes;
-    bind[10].buffer_length = no_l;
 
     if (
             mysql_stmt_fetch_column(stmt, bind, 0, 0) ||
@@ -155,5 +161,12 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 e_err person_fetch_by_detail(MYSQL *conn, Person *p);
 
 e_err person_destroy(Person *p) {
+    if (p->first_name) free((void *) p->first_name);
+    if (p->middle_name) free((void *) p->middle_name);
+    if (p->last_name) free((void *) p->last_name);
+    if (p->suffix) free((void *) p->suffix);
+    if (p->address) free(p->address);
+    if (p->notes) free(p->notes);
+    memset(p, 0, sizeof(*p));
     return ERR_OK;
 }

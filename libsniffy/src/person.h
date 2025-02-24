@@ -25,6 +25,7 @@ typedef enum : char {
 
 enum E_PersonImpFlags {
     EPIF_NAME_SET = 0x1,
+    EPIF_ID_SET = 0x2,
 };
 
 /**
