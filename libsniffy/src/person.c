@@ -1,5 +1,6 @@
 #include <memory.h>
 #include <mysql/mysql.h>
+#include <assert.h>
 
 #include "person.h"
 #include "errors.h"
@@ -7,6 +8,14 @@
 e_err person_init(Person *p) {
     memset(p, 0, sizeof(*p));
     return ERR_OK;
+}
+
+static e_err _person_generate_id(Person *p) {
+    if (!p->first_name || !p->middle_name || !p->last_name || p->birth_year == 1900) {
+        return ERR_NOT_ENOUGH_DATA;
+    }
+
+    return ERR_NOT_IMPLEMENTED;
 }
 
 e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
@@ -93,6 +102,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->first_name = calloc(fn_l + 1, sizeof(char));
     if (p->first_name == NULL) {
+        person_destroy(p);
         return ERR_ALLOC_FAILURE;
     }
 
@@ -101,6 +111,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->middle_name = calloc(mn_l + 1, sizeof(char));
     if (p->middle_name == NULL) {
+        person_destroy(p);
         return ERR_ALLOC_FAILURE;
     }
 
@@ -109,6 +120,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->last_name = calloc(ln_l + 1, sizeof(char));
     if (p->last_name == NULL) {
+        person_destroy(p);
         return ERR_ALLOC_FAILURE;
     }
 
@@ -118,6 +130,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (sf_l) {
         p->suffix = calloc(sf_l + 1, sizeof(char));
         if (p->suffix == NULL) {
+            person_destroy(p);
             return ERR_ALLOC_FAILURE;
         }
 
@@ -128,6 +141,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (ad_l) {
         p->address = calloc(ad_l + 1, sizeof(char));
         if (p->address == NULL) {
+            person_destroy(p);
             return ERR_ALLOC_FAILURE;
         }
 
@@ -138,6 +152,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (no_l) {
         p->notes = calloc(no_l + 1, sizeof(char));
         if (p->notes == NULL) {
+            person_destroy(p);
             return ERR_ALLOC_FAILURE;
         }
 
@@ -152,13 +167,17 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
             mysql_stmt_fetch_column(stmt, bind, 3, 0) ||
             mysql_stmt_fetch_column(stmt, bind, 8, 0) ||
             mysql_stmt_fetch_column(stmt, bind, 10, 0)
-        ) {
+       ) {
         return ERR_MYSQL_STMT_EXE_FAILURE;
     }
 
+    memcpy(p->id, id, sizeof(p->id) / sizeof(p->id[0]));
     return ERR_OK;
 }
-e_err person_fetch_by_detail(MYSQL *conn, Person *p);
+e_err person_fetch_by_detail(MYSQL *conn, Person *p) {
+    assert(0 && "Not implemented yet");
+    return ERR_NOT_IMPLEMENTED;
+}
 
 e_err person_destroy(Person *p) {
     if (p->first_name) free((void *) p->first_name);

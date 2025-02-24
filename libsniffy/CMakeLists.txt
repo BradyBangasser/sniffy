@@ -13,7 +13,7 @@ endif ()
 
 enable_testing()
 
-find_library(LIBMYSQLCLIENT mysqlclient REQUIRED)
+find_library(LIBMYSQLCLIENT mysqlclient REQUIRED HINTS /usr/lib64/mysql/)
 find_library(LIBSSL ssl REQUIRED)
 find_library(LIBCRYPT crypt REQUIRED)
 

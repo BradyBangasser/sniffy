@@ -3,6 +3,8 @@
 #define ALL_ERRORS(F) \
     F(ERR_OK) /* Everything was OK */ \
     F(ERR_NOT_FOUND) \
+    F(ERR_NOT_IMPLEMENTED) \
+    F(ERR_NOT_ENOUGH_DATA) \
     F(ERR_MYSQL_STMT_INIT) /* Failure allocating memory for a MYSQL STMT struct */ \
     F(ERR_MYSQL_STMT_PREPARE) \
     F(ERR_MYSQL_STMT_BIND_PARAM) \
