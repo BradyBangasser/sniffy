@@ -24,8 +24,8 @@ typedef enum : char {
 
 
 enum E_PersonImpFlags {
-    EPIF_NAME_SET = 0x1,
-    EPIF_ID_SET = 0x2,
+    EPIF_ID_SET = 0x1,
+    EPIF_FETCHED = 0x2,
 };
 
 /**
@@ -34,14 +34,14 @@ enum E_PersonImpFlags {
  * @note After you set the birth year you are not able set the birth year again, you must use the person_update_birth_year function
  */
 typedef struct {
-    uint8_t id[32];
+    const uint8_t id[32];
 
     const char *first_name;
     const char *middle_name;
     const char *last_name;
     const char *suffix;
 
-    Sex sex;
+    const Sex sex;
     Race race;
 
     // Birth Year - 1900

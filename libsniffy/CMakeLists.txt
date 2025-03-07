@@ -14,8 +14,7 @@ endif ()
 enable_testing()
 
 find_library(LIBMYSQLCLIENT mysqlclient REQUIRED HINTS /usr/lib64/mysql/)
-find_library(LIBSSL ssl REQUIRED)
-find_library(LIBCRYPT crypt REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_library(sniffy src/arrest.c src/person.c)
 add_library(sniffy::sniffy ALIAS sniffy)
@@ -23,8 +22,8 @@ add_library(sniffy::sniffy ALIAS sniffy)
 add_library(snifftest test/tdatabase.c)
 add_library(snifftest::snifftest ALIAS snifftest)
 
-target_link_libraries(sniffy ${LIBMYSQLCLIENT} ${LIBSSL} ${LIBCRYPT})
-target_link_libraries(snifftest ${LIBMYSQLCLIENT} ${LIBSSL} ${LIBCRYPT})
+target_link_libraries(sniffy ${LIBMYSQLCLIENT} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(snifftest ${LIBMYSQLCLIENT} OpenSSL::SSL OpenSSL::Crypto)
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 
@@ -37,10 +36,11 @@ add_custom_command(TARGET sniffy POST_BUILD COMMAND cp ${CMAKE_SOURCE_DIR}/src/*
 
 function(addtest files)
     add_executable(${files}.test.out tests/${files})
-    target_link_libraries(${files}.test.out sniffy snifftest)
+    target_link_libraries(${files}.test.out sniffy snifftest ${LIBMYSQLCLIENT} OpenSSL::SSL OpenSSL::Crypto)
     target_include_directories(${files}.test.out PRIVATE ${CMAKE_BINARY_DIR}/include)
     add_test(NAME ${files} COMMAND ${files}.test.out)
 endfunction()
 
 addtest(arrest_initialization.c)
 addtest(person_initialization.c)
+addtest(person_set_name.c)
