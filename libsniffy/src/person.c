@@ -86,7 +86,7 @@ static e_err _person_generate_id(Person *p) {
 static inline e_err _person_set_name(const char **oname, const char *name) {
     size_t ns;
     if (name) {
-        ns = strlen(name);
+        ns = strlen(name) + 1;
 
         if (!(*oname = *oname ? realloc((void *) *oname, ns) : malloc(ns))) {
             return ERR_ALLOC_FAILURE;
@@ -110,7 +110,6 @@ e_err person_set_name(Person *p, const char *first_name, const char *middle_name
         _person_set_name(&p->last_name, last_name) ||
         _person_set_name(&p->suffix, suffix)
        ) {
-
         return ERR_ALLOC_FAILURE;
     }
 
@@ -278,9 +277,122 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     return ERR_OK;
 }
+
 e_err person_fetch_by_detail(MYSQL *conn, Person *p) {
     assert(0 && "Not implemented yet");
     return ERR_NOT_IMPLEMENTED;
+}
+
+static inline uint8_t _person_not_partial(Person *p) {
+    return p->first_name && p->last_name && p->middle_name && p->birth_year && p->birth_year;
+}
+
+e_err person_upsert(MYSQL *conn, Person *p) {
+    e_err err = ERR_OK;
+    const static char *insert = "INSERT INTO people ("
+        "id,"
+        "first_name,"
+        "middle_name," 
+        "last_name," 
+        "suffix,"
+        "sex," 
+        "race," 
+        "birth_year,"
+        "height,"
+        "weight,"
+        "address,"
+        "phone_number,"
+        "notes"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    static MYSQL_BIND bind[13];
+
+    MYSQL_STMT *stmt;
+
+    memset(bind, 0, sizeof(bind));
+
+    if ((stmt = mysql_stmt_init(conn)) == NULL) {
+        return ERR_ALLOC_FAILURE;
+    }
+
+    if (mysql_stmt_prepare(stmt, insert, strlen(insert))) {
+        err = ERR_MYSQL_STMT_PREPARE;
+        goto close;
+    }
+
+    bind[0].buffer = (void *) p->id;
+    bind[0].buffer_type = MYSQL_TYPE_BLOB;
+    bind[0].buffer_length = 32;
+
+    bind[1].buffer = (void *) p->first_name;
+    bind[1].buffer_type = MYSQL_TYPE_STRING;
+    bind[1].is_null = (void *) 0;
+
+    bind[2].buffer = (void *) p->middle_name;
+    bind[2].buffer_type = MYSQL_TYPE_STRING;
+    bind[2].is_null = (void *) (uint64_t) ((intptr_t) p->middle_name <= 1);
+
+    bind[3].buffer = (void *) p->last_name;
+    bind[3].buffer_type = MYSQL_TYPE_STRING;
+    bind[3].is_null = (void *) 0;
+
+    bind[4].buffer = (void *) p->suffix;
+    bind[4].buffer_type = MYSQL_TYPE_STRING;
+    bind[4].is_null = (void *) (uint64_t) ((intptr_t) p->suffix <= 1);
+
+    bind[5].buffer = (void *) &p->sex;
+    bind[5].buffer_type = MYSQL_TYPE_TINY;
+    bind[5].is_null = (void *) &p->sex;
+
+    bind[6].buffer = &p->race;
+    bind[6].buffer_type = MYSQL_TYPE_TINY;
+    bind[6].is_null = (void *) &p->race;
+
+    bind[7].buffer = (void *) &p->birth_year;
+    bind[7].buffer_type = MYSQL_TYPE_TINY;
+    bind[7].is_unsigned = 1;
+    bind[7].is_null = (void *) 0;
+
+    bind[8].buffer = (void *) &p->weight;
+    bind[8].buffer_type = MYSQL_TYPE_TINY;
+    bind[8].is_unsigned = 1;
+    // World record for lowest weight is 4.7 or something
+    bind[8].is_null = (void *) (uint64_t) (p->weight < 3);
+
+    bind[9].buffer = (void *) &p->height;
+    bind[9].buffer_type = MYSQL_TYPE_SHORT;
+    bind[9].is_unsigned = 1;
+    // Shortest height was 1'9 or 21"
+    bind[9].is_null = (void *) (uint64_t) (p->height < 20);
+
+    bind[10].buffer = (void *) p->address;
+    bind[10].buffer_type = MYSQL_TYPE_STRING;
+    bind[10].is_null = (void *) p->address;
+
+    bind[11].buffer = (void *) &p->phone_number;
+    bind[11].buffer_type = MYSQL_TYPE_LONG;
+    bind[11].is_null = (void *) &p->phone_number;
+
+    bind[12].buffer = (void *) p->notes;
+    bind[12].buffer_type = MYSQL_TYPE_STRING;
+    bind[12].is_null = (void *) p->notes;
+
+    if (mysql_stmt_bind_param(stmt, bind)) {
+        err = ERR_MYSQL_STMT_BIND_PARAM;
+        goto close;
+    }
+    
+    if (mysql_stmt_execute(stmt)) {
+        // This may fail due to a duplicate key, we need to handle that
+        assert(0 && "TODO");
+        err = ERR_MYSQL_STMT_EXE_FAILURE;
+        goto close;
+    }
+
+close:
+    mysql_stmt_close(stmt);
+
+    return err;
 }
 
 e_err person_destroy(Person *p) {

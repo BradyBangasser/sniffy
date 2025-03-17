@@ -10,5 +10,7 @@ int main() {
 
     assert(!strcmp(p.first_name, "Bob"));
 
+    assert(!person_destroy(&p));
+
     return 0;
 }

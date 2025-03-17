@@ -12,7 +12,7 @@
 #endif
 
 #ifndef TEST_DB_PREFIX
-#define TEST_DB_PREFIX "sniffy"
+#define TEST_DB_PREFIX "sniffy_tdb"
 #endif
 
 uint8_t test_db_init(MYSQL *conn);

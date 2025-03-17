@@ -12,11 +12,11 @@ typedef struct Charge Charge;
 
 
 enum E_ArrestImpFlags {
-    EAIF_PERSON_SET = 0x1,
-    EAIF_BOND_SET = 0x2,
-    EAIF_FAC_SET = 0x4,
+    EAIF_PERSON_SET =       0x01,
+    EAIF_BOND_SET =         0x02,
+    EAIF_FAC_SET =          0x04,
     EAIF_RELEASE_DATE_SET = 0x08,
-    EAIF_ARREST_DATE_SET = 0x10,
+    EAIF_ARREST_DATE_SET =  0x10,
     EAIF_ID_SET = 0x20,
 };
 
