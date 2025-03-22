@@ -1,0 +1,6 @@
+#ifndef H_TEST_IN
+#define H_TEST_IN
+
+#define SQL_DIR "@LIBSNIFF_SQL_DIR@"
+
+#endif

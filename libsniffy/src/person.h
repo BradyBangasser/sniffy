@@ -66,4 +66,6 @@ e_err person_set_birth_year(Person *p, uint8_t birth_year);
 e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p);
 e_err person_fetch_by_detail(MYSQL *conn, Person *p);
 
+e_err person_upsert(MYSQL *conn, Person *p);
+
 e_err person_destroy(Person *p);

@@ -13,7 +13,7 @@ e_err person_init(Person *p) {
 }
 
 static e_err _person_generate_id(Person *p) {
-    if (!p->first_name || !p->middle_name || !p->last_name || p->birth_year == 0) {
+    if (!p->first_name || !p->last_name || p->birth_year == 0) {
         return ERR_NOT_ENOUGH_DATA;
     }
 
@@ -118,14 +118,30 @@ e_err person_set_name(Person *p, const char *first_name, const char *middle_name
     return ERR_OK;
 }
 
+e_err person_set_birth_year(Person *p, typeof(p->birth_year) year) {
+    if (p->_iflag & EPIF_FETCHED) {
+        assert(0 && "Modifying names on fetched person is not implemented yet");
+        return ERR_NOT_IMPLEMENTED;
+    }
+
+    *((uint8_t *) &p->birth_year) = year;
+
+    _person_generate_id(p);
+
+    return ERR_OK;
+}
+
 e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
-    static const char *query = "SELECT FirstName, MiddleName, LastName, Suffix, Sex, Race, Height, Weight, Address, PhoneNumber, Note FROM people WHERE ID=?";
+    static const char *query = "SELECT first_name, middle_name, last_name, suffix, sex, race, height, weight, address, phone_number, notes FROM people WHERE ID=?";
 
     uint64_t fn_l, mn_l, ln_l, sf_l, ad_l, no_l;
 
     MYSQL_BIND bind[11];
     MYSQL_STMT *stmt;
 
+    e_err err = ERR_OK;
+
+    assert(!person_init(p));
     memset(bind, 0, sizeof(bind));
 
     bind[0].buffer = id;
@@ -136,15 +152,18 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     }
 
     if (mysql_stmt_prepare(stmt, query, strlen(query))) {
-        return ERR_MYSQL_STMT_PREPARE;
+        err = ERR_MYSQL_STMT_PREPARE;
+        goto close;
     }
 
     if (mysql_stmt_bind_param(stmt, bind)) {
-        return ERR_MYSQL_STMT_BIND_PARAM;
+        err = ERR_MYSQL_STMT_BIND_PARAM;
+        goto close;
     }
 
     if (mysql_stmt_execute(stmt)) {
-        return ERR_MYSQL_STMT_EXE_FAILURE;
+        err = ERR_MYSQL_STMT_EXE_FAILURE;
+        goto close;
     }
 
     bind[0].buffer = 0;
@@ -193,17 +212,19 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     bind[10].length = &no_l;
 
     if (mysql_stmt_bind_result(stmt, bind)) {
-        return ERR_MYSQL_STMT_RESULT_BIND_FAILURE;
+        err = ERR_MYSQL_STMT_RESULT_BIND_FAILURE;
+        goto close;
     }
 
     if (mysql_stmt_fetch(stmt) == MYSQL_NO_DATA) {
-        return ERR_NOT_FOUND;
+        err = ERR_NOT_FOUND;
+        goto close;
     }
 
     p->first_name = calloc(fn_l + 1, sizeof(char));
     if (p->first_name == NULL) {
-        person_destroy(p);
-        return ERR_ALLOC_FAILURE;
+        err = ERR_ALLOC_FAILURE;
+        goto close_person;
     }
 
     bind[0].buffer = (void *) p->first_name;
@@ -211,8 +232,8 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->middle_name = calloc(mn_l + 1, sizeof(char));
     if (p->middle_name == NULL) {
-        person_destroy(p);
-        return ERR_ALLOC_FAILURE;
+        err = ERR_ALLOC_FAILURE;
+        goto close_person;
     }
 
     bind[1].buffer = (void *) p->middle_name;
@@ -220,8 +241,8 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->last_name = calloc(ln_l + 1, sizeof(char));
     if (p->last_name == NULL) {
-        person_destroy(p);
-        return ERR_ALLOC_FAILURE;
+        err = ERR_ALLOC_FAILURE;
+        goto close_person;
     }
 
     bind[2].buffer = (void *) p->last_name;
@@ -230,8 +251,8 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (sf_l) {
         p->suffix = calloc(sf_l + 1, sizeof(char));
         if (p->suffix == NULL) {
-            person_destroy(p);
-            return ERR_ALLOC_FAILURE;
+            err = ERR_ALLOC_FAILURE;
+            goto close_person;
         }
 
         bind[3].buffer = (void *) p->suffix;
@@ -241,8 +262,8 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (ad_l) {
         p->address = calloc(ad_l + 1, sizeof(char));
         if (p->address == NULL) {
-            person_destroy(p);
-            return ERR_ALLOC_FAILURE;
+            err = ERR_ALLOC_FAILURE;
+            goto close_person;
         }
 
         bind[8].buffer = (void *) p->address;
@@ -252,8 +273,8 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (no_l) {
         p->notes = calloc(no_l + 1, sizeof(char));
         if (p->notes == NULL) {
-            person_destroy(p);
-            return ERR_ALLOC_FAILURE;
+            err = ERR_ALLOC_FAILURE;
+            goto close_person;
         }
 
         bind[10].buffer = (void *) p->notes;
@@ -268,14 +289,24 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
             mysql_stmt_fetch_column(stmt, bind, 8, 0) ||
             mysql_stmt_fetch_column(stmt, bind, 10, 0)
        ) {
-        return ERR_MYSQL_STMT_EXE_FAILURE;
+        err = ERR_MYSQL_STMT_EXE_FAILURE;
+        goto close_person;
     }
 
     memcpy((void *) p->id, id, sizeof(p->id) / sizeof(p->id[0]));
     
     p->_iflag |= EPIF_FETCHED;
 
+    mysql_stmt_close(stmt);
+
     return ERR_OK;
+
+close_person:
+    person_destroy(p);
+close:
+    mysql_stmt_close(stmt);
+
+    return err;
 }
 
 e_err person_fetch_by_detail(MYSQL *conn, Person *p) {
@@ -289,6 +320,7 @@ static inline uint8_t _person_not_partial(Person *p) {
 
 e_err person_upsert(MYSQL *conn, Person *p) {
     e_err err = ERR_OK;
+    const static uint8_t sql_true = 1;
     const static char *insert = "INSERT INTO people ("
         "id,"
         "first_name,"
@@ -327,18 +359,22 @@ e_err person_upsert(MYSQL *conn, Person *p) {
     bind[1].buffer = (void *) p->first_name;
     bind[1].buffer_type = MYSQL_TYPE_STRING;
     bind[1].is_null = (void *) 0;
+    bind[1].buffer_length = strlen(p->first_name);
 
     bind[2].buffer = (void *) p->middle_name;
     bind[2].buffer_type = MYSQL_TYPE_STRING;
-    bind[2].is_null = (void *) (uint64_t) ((intptr_t) p->middle_name <= 1);
+    bind[2].is_null = (void *) (p->middle_name ? 0 : &sql_true);
+    bind[2].buffer_length = p->middle_name ? strlen(p->middle_name) : 0;
 
     bind[3].buffer = (void *) p->last_name;
     bind[3].buffer_type = MYSQL_TYPE_STRING;
     bind[3].is_null = (void *) 0;
+    bind[3].buffer_length = strlen(p->last_name);
 
     bind[4].buffer = (void *) p->suffix;
     bind[4].buffer_type = MYSQL_TYPE_STRING;
-    bind[4].is_null = (void *) (uint64_t) ((intptr_t) p->suffix <= 1);
+    bind[4].is_null = (void *) (p->suffix ? 0 : &sql_true);
+    bind[4].buffer_length = p->suffix ? strlen(p->suffix) : 0;
 
     bind[5].buffer = (void *) &p->sex;
     bind[5].buffer_type = MYSQL_TYPE_TINY;
@@ -357,25 +393,26 @@ e_err person_upsert(MYSQL *conn, Person *p) {
     bind[8].buffer_type = MYSQL_TYPE_TINY;
     bind[8].is_unsigned = 1;
     // World record for lowest weight is 4.7 or something
-    bind[8].is_null = (void *) (uint64_t) (p->weight < 3);
+    bind[8].is_null = (void *) (p->weight ? 0 : &sql_true);
 
     bind[9].buffer = (void *) &p->height;
     bind[9].buffer_type = MYSQL_TYPE_SHORT;
     bind[9].is_unsigned = 1;
     // Shortest height was 1'9 or 21"
-    bind[9].is_null = (void *) (uint64_t) (p->height < 20);
+    bind[9].is_null = (void *) (p->height ? 0 : &sql_true);
 
     bind[10].buffer = (void *) p->address;
     bind[10].buffer_type = MYSQL_TYPE_STRING;
-    bind[10].is_null = (void *) p->address;
+    bind[10].is_null = (void *) (p->address ? (void *) p->address : &sql_true);
 
     bind[11].buffer = (void *) &p->phone_number;
     bind[11].buffer_type = MYSQL_TYPE_LONG;
-    bind[11].is_null = (void *) &p->phone_number;
+    bind[11].is_null = (void *) (p->phone_number ? 0 : &sql_true);
 
     bind[12].buffer = (void *) p->notes;
     bind[12].buffer_type = MYSQL_TYPE_STRING;
-    bind[12].is_null = (void *) p->notes;
+    bind[12].is_null = (void *) (p->notes ? (void *) p->notes : &sql_true);
+    bind[12].buffer_length = p->notes ? strlen(p->notes) : 0;
 
     if (mysql_stmt_bind_param(stmt, bind)) {
         err = ERR_MYSQL_STMT_BIND_PARAM;
