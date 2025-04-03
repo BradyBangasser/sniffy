@@ -1,0 +1,3 @@
+[submodule "libsniffy/lib/hashtable"]
+	path = libsniffy/lib/hashtable
+	url = https://github.com/BradyBangasser/hashtable

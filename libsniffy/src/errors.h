@@ -18,8 +18,10 @@
 #define STR(S) #S,
 #define EN(S) S,
 
-static const char *err_codes[] = { ALL_ERRORS(STR) };
+static const char *sniff_err_codes[] = { ALL_ERRORS(STR) };
 
 typedef enum {
     ALL_ERRORS(EN)
-} e_err;
+} sniff_e_err;
+
+static inline const char *sniff_err_to_str(sniff_e_err ecode) { return sniff_err_codes[ecode]; }

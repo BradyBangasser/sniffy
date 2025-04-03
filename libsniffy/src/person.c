@@ -7,12 +7,12 @@
 #include "person.h"
 #include "errors.h"
 
-e_err person_init(Person *p) {
+sniff_e_err sniff_person_init(sniff_person *p) {
     memset(p, 0, sizeof(*p));
     return ERR_OK;
 }
 
-static e_err _person_generate_id(Person *p) {
+static sniff_e_err _person_generate_id(sniff_person *p) {
     if (!p->first_name || !p->last_name || p->birth_year == 0) {
         return ERR_NOT_ENOUGH_DATA;
     }
@@ -83,7 +83,7 @@ static e_err _person_generate_id(Person *p) {
     return ERR_OK;
 }
 
-static inline e_err _person_set_name(const char **oname, const char *name) {
+static inline sniff_e_err _person_set_name(char **oname, const char *name) {
     size_t ns;
     if (name) {
         ns = strlen(name) + 1;
@@ -98,7 +98,7 @@ static inline e_err _person_set_name(const char **oname, const char *name) {
     return ERR_OK;
 }
 
-e_err person_set_name(Person *p, const char *first_name, const char *middle_name, const char *last_name, const char *suffix) {
+sniff_e_err sniff_person_set_name(sniff_person *p, const char *first_name, const char *middle_name, const char *last_name, const char *suffix) {
     if (p->_iflag & EPIF_FETCHED) {
         assert(0 && "Modifying names on fetched person is not implemented yet");
         return ERR_NOT_IMPLEMENTED;
@@ -118,7 +118,7 @@ e_err person_set_name(Person *p, const char *first_name, const char *middle_name
     return ERR_OK;
 }
 
-e_err person_set_birth_year(Person *p, typeof(p->birth_year) year) {
+sniff_e_err sniff_person_set_birth_year(sniff_person *p, typeof(p->birth_year) year) {
     if (p->_iflag & EPIF_FETCHED) {
         assert(0 && "Modifying names on fetched person is not implemented yet");
         return ERR_NOT_IMPLEMENTED;
@@ -131,17 +131,17 @@ e_err person_set_birth_year(Person *p, typeof(p->birth_year) year) {
     return ERR_OK;
 }
 
-e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
+sniff_e_err sniff_person_fetch_by_id(MYSQL *conn, uint8_t id[32], sniff_person *p) {
     static const char *query = "SELECT first_name, middle_name, last_name, suffix, sex, race, height, weight, address, phone_number, notes FROM people WHERE ID=?";
 
-    uint64_t fn_l, mn_l, ln_l, sf_l, ad_l, no_l;
+    uint64_t fn_l = 0, mn_l = 0, ln_l = 0, sf_l = 0, ad_l = 0, no_l = 0;
 
     MYSQL_BIND bind[11];
     MYSQL_STMT *stmt;
 
-    e_err err = ERR_OK;
+    sniff_e_err err = ERR_OK;
 
-    assert(!person_init(p));
+    assert(!sniff_person_init(p));
     memset(bind, 0, sizeof(bind));
 
     bind[0].buffer = id;
@@ -223,17 +223,21 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->first_name = calloc(fn_l + 1, sizeof(char));
     if (p->first_name == NULL) {
+        fprintf(stderr, "fname\n");
         err = ERR_ALLOC_FAILURE;
-        goto close_person;
+        goto close;
     }
 
     bind[0].buffer = (void *) p->first_name;
     bind[0].buffer_length = fn_l;
 
-    p->middle_name = calloc(mn_l + 1, sizeof(char));
-    if (p->middle_name == NULL) {
-        err = ERR_ALLOC_FAILURE;
-        goto close_person;
+    if (mn_l) {
+        p->middle_name = calloc(mn_l + 1, sizeof(char));
+        fprintf(stderr, "mname %ld\n", mn_l);
+        if (p->middle_name == NULL) {
+            err = ERR_ALLOC_FAILURE;
+            goto close;
+        }
     }
 
     bind[1].buffer = (void *) p->middle_name;
@@ -241,8 +245,9 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     p->last_name = calloc(ln_l + 1, sizeof(char));
     if (p->last_name == NULL) {
+        fprintf(stderr, "lname\n");
         err = ERR_ALLOC_FAILURE;
-        goto close_person;
+        goto close;
     }
 
     bind[2].buffer = (void *) p->last_name;
@@ -251,8 +256,9 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (sf_l) {
         p->suffix = calloc(sf_l + 1, sizeof(char));
         if (p->suffix == NULL) {
+        fprintf(stderr, "suffix %ld\n", sf_l);
             err = ERR_ALLOC_FAILURE;
-            goto close_person;
+            goto close;
         }
 
         bind[3].buffer = (void *) p->suffix;
@@ -262,8 +268,9 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (ad_l) {
         p->address = calloc(ad_l + 1, sizeof(char));
         if (p->address == NULL) {
+        fprintf(stderr, "address\n");
             err = ERR_ALLOC_FAILURE;
-            goto close_person;
+            goto close;
         }
 
         bind[8].buffer = (void *) p->address;
@@ -273,8 +280,9 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
     if (no_l) {
         p->notes = calloc(no_l + 1, sizeof(char));
         if (p->notes == NULL) {
+        fprintf(stderr, "notes\n");
             err = ERR_ALLOC_FAILURE;
-            goto close_person;
+            goto close;
         }
 
         bind[10].buffer = (void *) p->notes;
@@ -290,7 +298,7 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
             mysql_stmt_fetch_column(stmt, bind, 10, 0)
        ) {
         err = ERR_MYSQL_STMT_EXE_FAILURE;
-        goto close_person;
+        goto close;
     }
 
     memcpy((void *) p->id, id, sizeof(p->id) / sizeof(p->id[0]));
@@ -301,25 +309,25 @@ e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p) {
 
     return ERR_OK;
 
-close_person:
-    person_destroy(p);
+
+    sniff_person_destroy(p);
 close:
     mysql_stmt_close(stmt);
 
     return err;
 }
 
-e_err person_fetch_by_detail(MYSQL *conn, Person *p) {
+sniff_e_err sniff_person_fetch_by_detail(MYSQL *conn, sniff_person *p) {
     assert(0 && "Not implemented yet");
     return ERR_NOT_IMPLEMENTED;
 }
 
-static inline uint8_t _person_not_partial(Person *p) {
+static inline uint8_t _person_not_partial(sniff_person *p) {
     return p->first_name && p->last_name && p->middle_name && p->birth_year && p->birth_year;
 }
 
-e_err person_upsert(MYSQL *conn, Person *p) {
-    e_err err = ERR_OK;
+sniff_e_err sniff_person_upsert(MYSQL *conn, sniff_person *p) {
+    sniff_e_err err = ERR_OK;
     const static uint8_t sql_true = 1;
     const static char *insert = "INSERT INTO people ("
         "id,"
@@ -432,7 +440,7 @@ close:
     return err;
 }
 
-e_err person_destroy(Person *p) {
+sniff_e_err sniff_person_destroy(sniff_person *p) {
     if (p->first_name) free((void *) p->first_name);
     if (p->middle_name) free((void *) p->middle_name);
     if (p->last_name) free((void *) p->last_name);

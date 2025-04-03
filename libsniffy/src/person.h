@@ -6,26 +6,28 @@
 #include <mysql/mysql.h>
 
 #include "errors.h"
+#include "source.h"
 
 typedef enum : char {
-    SR_UNKNOWN = 0,
+    SR_UNKNOWN,
     SR_BLACK,
     SR_WHITE,
     SR_ASIAN,
     SR_PACIFIC,
     SR_NATIVE,
-} Race;
+} sniff_race;
 
 typedef enum : char {
-    S_UNKNOWN = 0,
+    S_UNKNOWN,
     S_FEMALE,
     S_MALE,
-} Sex;
+} sniff_sex;
 
 
-enum E_PersonImpFlags {
-    EPIF_ID_SET = 0x1,
-    EPIF_FETCHED = 0x2,
+enum sniff_e_piflags {
+    EPIF_ID_SET  = 0x01,
+    EPIF_FETCHED = 0x02,
+    EPIF_SRC     = 0x04
 };
 
 /**
@@ -34,18 +36,22 @@ enum E_PersonImpFlags {
  * @note After you set the birth year you are not able set the birth year again, you must use the person_update_birth_year function
  */
 typedef struct {
-    const uint8_t id[32];
+    uint8_t id[32];
+    union {
+        sniff_src *src;
+        uint8_t *id;
+    } src;
 
-    const char *first_name;
-    const char *middle_name;
-    const char *last_name;
-    const char *suffix;
+    char *first_name;
+    char *middle_name;
+    char *last_name;
+    char *suffix;
 
-    const Sex sex;
-    Race race;
+    sniff_sex sex;
+    sniff_race race;
 
     // Birth Year - 1900
-    const uint8_t birth_year; // Unset is 0
+    uint8_t birth_year; // Unset is 0
     uint8_t height; // In inches
     uint16_t weight; // In Pounds
 
@@ -56,16 +62,16 @@ typedef struct {
     ssize_t notes_len;
 
     uint32_t _iflag;
-} Person;
+} sniff_person;
 
-e_err person_init(Person *p);
+sniff_e_err sniff_person_init(sniff_person *p);
 
-e_err person_set_name(Person *p, const char *first_name, const char *middle_name, const char *last_name, const char *suffix);
-e_err person_set_birth_year(Person *p, uint8_t birth_year);
+sniff_e_err sniff_person_set_name(sniff_person *p, const char *first_name, const char *middle_name, const char *last_name, const char *suffix);
+sniff_e_err sniff_person_set_birth_year(sniff_person *p, uint8_t birth_year);
 
-e_err person_fetch_by_id(MYSQL *conn, uint8_t id[32], Person *p);
-e_err person_fetch_by_detail(MYSQL *conn, Person *p);
+sniff_e_err sniff_person_fetch_by_id(MYSQL *conn, uint8_t id[32], sniff_person *p);
+sniff_e_err sniff_person_fetch_by_detail(MYSQL *conn, sniff_person *p);
 
-e_err person_upsert(MYSQL *conn, Person *p);
+sniff_e_err sniff_person_upsert(MYSQL *conn, sniff_person *p);
 
-e_err person_destroy(Person *p);
+sniff_e_err sniff_person_destroy(sniff_person *p);

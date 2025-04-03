@@ -3,11 +3,11 @@
 #include "person.h"
 
 int main() {
-    Person p0, p1;
+    sniff_person p0, p1;
 
     memset(&p1, 0, sizeof(p1));
 
-    if (person_init(&p0)) {
+    if (sniff_person_init(&p0)) {
         return 1;
     }
 
@@ -15,7 +15,7 @@ int main() {
         return 2;
     }
 
-    if (person_destroy(&p0)) {
+    if (sniff_person_destroy(&p0)) {
         return 3;
     }
 

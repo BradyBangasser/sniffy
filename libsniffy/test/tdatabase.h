@@ -2,6 +2,7 @@
 #define SNIFFY_TEST_DATABASE_H
 
 #include <mysql/mysql.h>
+#include <inttypes.h>
 
 #ifndef TEST_DB_HOST
 #define TEST_DB_HOST NULL

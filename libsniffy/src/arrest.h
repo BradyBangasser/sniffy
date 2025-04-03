@@ -8,16 +8,15 @@
 #include "errors.h"
 #include "person.h"
 
-typedef struct Charge Charge;
+typedef struct sniff_charge sniff_charge;
 
-
-enum E_ArrestImpFlags {
-    EAIF_PERSON_SET =       0x01,
-    EAIF_BOND_SET =         0x02,
-    EAIF_FAC_SET =          0x04,
-    EAIF_RELEASE_DATE_SET = 0x08,
-    EAIF_ARREST_DATE_SET =  0x10,
-    EAIF_ID_SET = 0x20,
+enum sniff_e_aiflags {
+    EAIF_PERSON_SET         = 0x01,
+    EAIF_BOND_SET           = 0x02,
+    EAIF_FAC_SET            = 0x04,
+    EAIF_RELEASE_DATE_SET   = 0x08,
+    EAIF_ARREST_DATE_SET    = 0x10,
+    EAIF_ID_SET             = 0x20,
 };
 
 typedef struct {
@@ -25,35 +24,35 @@ typedef struct {
     uint32_t fid;
     union {
         uint8_t pid[32];
-        Person *p;
+        sniff_person *p;
     } _person;
 
     uint32_t bond;
     uint32_t initial_bond;
 
-    Charge *charges;
+    sniff_charge *charges;
     size_t n_charges;
 
     uint32_t _iflags;
-} Arrest;
+} sniff_arrest;
 
 /**
  * Initialize the Arrest structure
  * This is required
  */
-e_err arrest_init(Arrest *arr);
+sniff_e_err sniff_arrest_init(sniff_arrest *arr);
 
 /**
  * Checks if the arrest is linked to a full person object
  * returns 0 if the arrest contains a pointer to a full person
  */ 
-static inline uint8_t arrest_has_full_person(Arrest *arr) { return arr->_person.p == NULL || arr->_iflags ^ EAIF_PERSON_SET; }
-static inline uint8_t arrest_has_pid(Arrest *arr) { return arr->_person.p == NULL || arr->_iflags & EAIF_PERSON_SET; }
-static inline Person *arrest_get_person(Arrest *arr) { return arrest_has_full_person(arr) ?  NULL : arr->_person.p; }
+static inline uint8_t sniff_arrest_has_full_person(sniff_arrest *arr) { return arr->_person.p == NULL || arr->_iflags ^ EAIF_PERSON_SET; }
+static inline uint8_t sniff_arrest_has_pid(sniff_arrest *arr) { return arr->_person.p == NULL || arr->_iflags & EAIF_PERSON_SET; }
+static inline sniff_person *sniff_arrest_get_person(sniff_arrest *arr) { return sniff_arrest_has_full_person(arr) ?  NULL : arr->_person.p; }
 
-e_err arrest_set_charges(Arrest *arr, Charge *c, size_t n_charges);
+sniff_e_err sniff_arrest_set_charges(sniff_arrest *arr, sniff_charge *c, size_t n_charges);
 
 /**
  * Destroy the arrest structure
  */
-e_err arrest_destroy(Arrest *arr);
+sniff_e_err sniff_arrest_destroy(sniff_arrest *arr);
