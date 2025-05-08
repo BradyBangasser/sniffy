@@ -1,0 +1,5 @@
+# Comment
+person {
+    id # default id type is 32 bytes, required in c code
+
+}
